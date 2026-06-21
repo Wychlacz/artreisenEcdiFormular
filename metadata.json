@@ -1,0 +1,6 @@
+{
+  "name": "Art Reisen Workshop-Anmeldung",
+  "description": "Ein professionelles Anmeldeformular für den ECDI-Workshop auf Fuerteventura für das Reisebüro Art Reisen, inklusive Teilnehmerverwaltung und Buchungsvorschau.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

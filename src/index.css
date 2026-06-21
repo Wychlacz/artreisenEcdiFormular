@@ -1,0 +1,30 @@
+@import url('https://fonts.googleapis.com/css2?family=Comfortaa:wght@700&family=Montserrat:wght@300;400;500;600;700;800&family=Nunito:wght@300;400;500;600;700;800&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Nunito", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Montserrat", sans-serif;
+  --font-logo: "Comfortaa", "Nunito", sans-serif;
+  
+  --color-brand-orange: #f49700;
+  --color-brand-blue: #0085cd;
+  --color-brand-yellow: #ffd400;
+  --color-brand-orange-yellow: #fbb600;
+  --color-brand-dark-brown: #0f223d;
+  --color-brand-dark-blue: #0f223d;
+  --color-brand-dark-green: #4a5d45;
+  --color-brand-light-bg: #f5f2eb;
+  --color-brand-dark-text: #333333;
+  --color-brand-gray: #e2e0da;
+}
+
+/* Custom background setting */
+body {
+  background-color: var(--color-brand-light-bg);
+  color: var(--color-brand-dark-text);
+  font-family: var(--font-sans);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display);
+}
