@@ -38,15 +38,20 @@ Telefon (Mobil):  ${registration.telefonMobil}
 E-Mail:           ${registration.email}
 
 REISENDE INSGESAMT: ${registration.personenAnzahl} Person(en)
+Hauptreisender:      ${registration.anrede} ${registration.vorname} ${registration.nachname} (Geb.: ${registration.geburtsdatum})${registration.zimmer && registration.zimmer.length > 1 ? ` [Zugeordnetes Zimmer: Zimmer ${registration.zimmerIndex !== undefined ? registration.zimmerIndex + 1 : 1}]` : ''}
 ${registration.mitreisende.length > 0 ? `
 MITREISENDE PERSONEN:
 -----------------------------------------
-${registration.mitreisende.map((mr, i) => `${i + 2}. Person: ${mr.vorname} ${mr.nachname} (Geb.: ${mr.geburtsdatum})`).join('\n')}` : ''}
+${registration.mitreisende.map((mr, i) => `${i + 2}. Person: ${mr.vorname} ${mr.nachname} (Geb.: ${mr.geburtsdatum})${registration.zimmer && registration.zimmer.length > 1 ? ` [Zugeordnetes Zimmer: Zimmer ${mr.zimmerIndex !== undefined ? mr.zimmerIndex + 1 : 1}]` : ''}`).join('\n')}` : ''}
 
 REISE- & UNTERBRINGUNGSDETAILS:
 -----------------------------------------
-Abflughafen:      ${registration.abflughafen === 'Anderer Abflughafen (bitte angeben)' ? registration.abflughafenAnderer : registration.abflughafen}
-Zimmertyp:        ${registration.zimmertyp}
+Abflughafen:      ${registration.abflughafen === 'andere Flughäfen' ? registration.abflughafenAnderer : registration.abflughafen}
+${registration.zimmer && registration.zimmer.length > 0 ? `Zimmer-Aufteilung:
+${registration.zimmer.map((z, idx) => `  * Zimmer ${idx+1}: ${z.zimmertyp} (${z.gaesteAnzahl} Person(en))` + (registration.zimmer && registration.zimmer.length > 1 ? ` - Belegt durch: ${[
+  ...(registration.zimmerIndex === idx ? [`${registration.vorname} ${registration.nachname}`] : []),
+  ...registration.mitreisende.filter(m => m.zimmerIndex === idx).map(m => `${m.vorname} ${m.nachname}`)
+].join(', ') || 'Keine Angabe'}` : '')).join('\n')}` : `Zimmertyp:        ${registration.zimmertyp}`}
 
 ZUSATZLEISTUNGEN & SONDERWÜNSCHE:
 -----------------------------------------
@@ -90,8 +95,9 @@ Wir freuen uns sehr über Ihre Nachricht. Die Buchungsreferenz lautet: ${registr
 Hier ist eine Übersicht Ihrer Reiseanmeldung:
 -------------------------------------------------------------------------
 - Anzahl Reisende: ${registration.personenAnzahl} Person(en)
-- Abflughafen: ${registration.abflughafen === 'Anderer Abflughafen (bitte angeben)' ? registration.abflughafenAnderer : registration.abflughafen}
-- Zimmertyp: ${registration.zimmertyp}
+- Abflughafen: ${registration.abflughafen === 'andere Flughäfen' ? registration.abflughafenAnderer : registration.abflughafen}
+- Gebuchte Zimmer:
+${registration.zimmer && registration.zimmer.length > 0 ? registration.zimmer.map((z, idx) => `  * Zimmer ${idx+1}: ${z.zimmertyp} (${z.gaesteAnzahl} Person(en))`).join('\n') : `  * ${registration.zimmertyp}`}
 - Flexoption (59 Euro): ${registration.flexOption}
 - Gewünschte Zusatzleistungen:
   ${registration.zusatzVerlaengerung ? `* Verlängerungswunsch: ${registration.zusatzVerlaengerungText}` : ''}
@@ -162,19 +168,34 @@ Inhabergeführt seit über 30 Jahren.
                   {registration.anrede} {registration.vorname} {registration.nachname}
                 </span>
                 <span className="block text-gray-400 text-[10px]">{registration.email}</span>
+                {registration.zimmer && registration.zimmer.length > 1 && (
+                  <span className="block text-brand-orange text-[10px] font-bold mt-0.5">
+                    Zugewiesen: Zimmer {registration.zimmerIndex !== undefined ? registration.zimmerIndex + 1 : 1}
+                  </span>
+                )}
               </div>
 
               <div>
-                <span className="text-gray-400 block font-medium">Unterkunftstyp</span>
-                <span className="font-display font-extrabold text-sm text-brand-dark-brown">
-                  {registration.zimmertyp}
-                </span>
+                <span className="text-gray-400 block font-medium">Unterkunft / Belegung</span>
+                {registration.zimmer && registration.zimmer.length > 0 ? (
+                  <div className="space-y-0.5 mt-0.5 font-sans">
+                    {registration.zimmer.map((z, idx) => (
+                      <div key={idx} className="text-[10px] font-semibold text-brand-dark-brown leading-tight">
+                        Z{idx+1}: {z.gaesteAnzahl}P ({z.zimmertyp})
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <span className="font-display font-extrabold text-sm text-brand-dark-brown">
+                    {registration.zimmertyp}
+                  </span>
+                )}
               </div>
 
               <div>
                 <span className="text-gray-400 block font-medium">Abflughafen</span>
                 <span className="font-display font-semibold text-xs text-brand-blue">
-                  {registration.abflughafen === 'Anderer Abflughafen (bitte angeben)' ? registration.abflughafenAnderer : registration.abflughafen}
+                  {registration.abflughafen === 'andere Flughäfen' ? registration.abflughafenAnderer : registration.abflughafen}
                 </span>
               </div>
 
@@ -192,8 +213,15 @@ Inhabergeführt seit über 30 Jahren.
                 <span className="text-[10px] font-bold text-brand-dark-brown block uppercase tracking-wider">Mitreisende Personen:</span>
                 <div className="space-y-1">
                   {registration.mitreisende.map((mr, idx) => (
-                    <div key={idx} className="text-xs flex justify-between text-gray-600 bg-white p-1 px-2 rounded border border-brand-gray/30">
-                      <span><strong>{mr.vorname} {mr.nachname}</strong></span>
+                    <div key={idx} className="text-xs flex flex-row justify-between items-center text-gray-600 bg-white p-2 rounded border border-brand-gray/30 gap-2">
+                      <div className="flex flex-col">
+                        <span><strong>{mr.vorname} {mr.nachname}</strong></span>
+                        {registration.zimmer && registration.zimmer.length > 1 && (
+                          <span className="text-[10px] text-brand-orange font-bold">
+                            Zugewiesen: Zimmer {mr.zimmerIndex !== undefined ? mr.zimmerIndex + 1 : 1}
+                          </span>
+                        )}
+                      </div>
                       <span className="text-[10px] text-gray-400">Geb.: {new Date(mr.geburtsdatum).toLocaleDateString('de-DE')}</span>
                     </div>
                   ))}

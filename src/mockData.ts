@@ -84,9 +84,8 @@ export const DEPARTURE_AIRPORTS = [
   'Stuttgart (STR)',
   'Köln/Bonn (CGN)',
   'Hannover (HAJ)',
-  'Leipzig/Halle (LEJ)',
-  'Nürnberg (NUE)',
-  'Anderer Abflughafen (bitte angeben)'
+  'andere Flughäfen',
+  'ohne Flug'
 ];
 
 export const ROOM_TYPES = [

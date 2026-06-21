@@ -42,7 +42,7 @@ export default function AdminDashboard({
     
     let matchesAirport = true;
     if (airportFilter !== 'all') {
-      matchesAirport = reg.abflughafen === airportFilter || (airportFilter === 'Anderer' && reg.abflughafen === 'Anderer Abflughafen (bitte angeben)');
+      matchesAirport = reg.abflughafen === airportFilter || (airportFilter === 'Anderer' && reg.abflughafen === 'andere Flughäfen');
     }
 
     return matchesSearch && matchesStatus && matchesRoom && matchesAirport;
@@ -89,7 +89,7 @@ export default function AdminDashboard({
         companionDetails,
         reg.abflughafen,
         reg.abflughafenAnderer || '',
-        reg.zimmertyp,
+        reg.zimmer && reg.zimmer.length > 0 ? reg.zimmer.map((z, idx) => `Zimmer ${idx+1} (${z.gaesteAnzahl} Belegung): ${z.zimmertyp || 'N/A'}`).join(' | ') : reg.zimmertyp,
         reg.agbKenntnis,
         reg.pauschalreiseRichtlinien,
         reg.versicherungInfoBenoetigt,
@@ -312,11 +312,21 @@ export default function AdminDashboard({
                       </td>
                       <td className="px-4 py-3.5 text-[11px]">
                         <span className="font-semibold text-brand-blue tracking-tight block">
-                          {reg.abflughafen === 'Anderer Abflughafen (bitte angeben)' ? reg.abflughafenAnderer : reg.abflughafen}
+                          {reg.abflughafen === 'andere Flughäfen' ? reg.abflughafenAnderer : reg.abflughafen}
                         </span>
                       </td>
-                      <td className="px-4 py-3.5 text-gray-600">
-                        {reg.zimmertyp}
+                      <td className="px-4 py-3.5 text-gray-600 text-[11px]">
+                        {reg.zimmer && reg.zimmer.length > 0 ? (
+                          <div className="space-y-0.5">
+                            {reg.zimmer.map((z, idx) => (
+                              <div key={idx} className="whitespace-nowrap text-[10px] leading-tight">
+                                <span className="font-extrabold text-brand-blue">Z{idx + 1}:</span> {z.gaesteAnzahl}G ({z.zimmertyp || 'N/A'})
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          reg.zimmertyp
+                        )}
                       </td>
                       <td className="px-4 py-3.5 text-center">
                         <div className="inline-flex flex-col items-center">
@@ -441,6 +451,12 @@ export default function AdminDashboard({
                       <span className="text-gray-400 block">Handynummer l. CRS</span>
                       <p className="font-semibold">{selectedReg.telefonMobil}</p>
                     </div>
+                    {selectedReg.zimmer && selectedReg.zimmer.length > 1 && (
+                      <div>
+                        <span className="text-gray-400 block">Zimmer-Zuordnung</span>
+                        <p className="font-semibold text-brand-orange">Zimmer {selectedReg.zimmerIndex !== undefined ? selectedReg.zimmerIndex + 1 : 1}</p>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -452,8 +468,15 @@ export default function AdminDashboard({
                     </h4>
                     <div className="space-y-2">
                       {selectedReg.mitreisende.map((mr, idx) => (
-                        <div key={idx} className="bg-brand-light-bg p-2.5 rounded-lg border border-brand-gray flex justify-between">
-                          <span><strong>{idx + 2}. Person:</strong> {mr.vorname} {mr.nachname}</span>
+                        <div key={idx} className="bg-brand-light-bg p-2.5 rounded-lg border border-brand-gray flex justify-between items-center text-xs">
+                          <div className="flex flex-col">
+                            <span><strong>{idx + 2}. Person:</strong> {mr.vorname} {mr.nachname}</span>
+                            {selectedReg.zimmer && selectedReg.zimmer.length > 1 && (
+                              <span className="text-[10px] text-brand-orange font-bold">
+                                Zimmer-Zuordnung: Zimmer {mr.zimmerIndex !== undefined ? mr.zimmerIndex + 1 : 1}
+                              </span>
+                            )}
+                          </div>
                           <span className="text-gray-400 italic">Geburtsdatum: {new Date(mr.geburtsdatum).toLocaleDateString('de-DE')}</span>
                         </div>
                       ))}
@@ -470,12 +493,36 @@ export default function AdminDashboard({
                     <div>
                       <span className="text-gray-400 block">Abflughafen</span>
                       <p className="font-semibold text-brand-dark-brown">
-                        {selectedReg.abflughafen === 'Anderer Abflughafen (bitte angeben)' ? selectedReg.abflughafenAnderer : selectedReg.abflughafen}
+                        {selectedReg.abflughafen === 'andere Flughäfen' ? selectedReg.abflughafenAnderer : selectedReg.abflughafen}
                       </p>
                     </div>
                     <div>
-                      <span className="text-gray-400 block">Zimmertyp</span>
-                      <p className="font-semibold text-brand-dark-brown">{selectedReg.zimmertyp}</p>
+                      <span className="text-gray-400 block">Zuständige Zimmer</span>
+                      {selectedReg.zimmer && selectedReg.zimmer.length > 0 ? (
+                        <div className="space-y-1.5 mt-1 font-sans">
+                          {selectedReg.zimmer.map((z, idx) => {
+                            const occupants = [
+                              ...(selectedReg.zimmerIndex === idx ? [`${selectedReg.vorname} ${selectedReg.nachname} (Haupt)`] : []),
+                              ...selectedReg.mitreisende.filter(m => m.zimmerIndex === idx).map(m => `${m.vorname} ${m.nachname}`)
+                            ];
+                            return (
+                              <div key={idx} className="bg-brand-blue/5 border border-brand-blue/15 rounded p-2 text-[11px] leading-tight space-y-1">
+                                <div className="flex justify-between font-semibold">
+                                  <span>Zimmer {idx + 1}: {z.zimmertyp || 'N/A'}</span>
+                                  <span className="text-gray-500">{z.gaesteAnzahl} {z.gaesteAnzahl === 1 ? 'Person' : 'Personen'}</span>
+                                </div>
+                                {selectedReg.zimmer.length > 1 && (
+                                  <div className="text-[10px] text-brand-orange font-medium">
+                                    Gäste: {occupants.join(', ') || 'Keine Angaben'}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <p className="font-semibold text-brand-dark-brown">{selectedReg.zimmertyp}</p>
+                      )}
                     </div>
                   </div>
                 </div>

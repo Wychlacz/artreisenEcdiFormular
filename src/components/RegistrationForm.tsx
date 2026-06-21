@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Registration, Reisender } from '../types';
+import { Registration, Reisender, ZimmerBuchung } from '../types';
 import { DEPARTURE_AIRPORTS, ROOM_TYPES } from '../mockData';
 import { motion, AnimatePresence } from 'motion/react';
 import Logo from './Logo';
@@ -26,8 +26,12 @@ const DEFAULT_FORM_STATE = {
   land: 'Deutschland',
   telefonMobil: '',
   email: '',
+  zimmerIndex: 0,
   personenAnzahl: 1,
   mitreisende: [] as Reisender[],
+  zimmer: [
+    { gaesteAnzahl: 1, zimmertyp: '' }
+  ] as ZimmerBuchung[],
   abflughafen: '',
   abflughafenAnderer: '',
   zimmertyp: '' as Registration['zimmertyp'],
@@ -45,6 +49,27 @@ const DEFAULT_FORM_STATE = {
   zusatzPrivatTransfer: false,
   zusatzVersicherungAngebot: false,
   zusatzRailAndFly: false,
+};
+
+const applyDefaultRoomAssignments = (rooms: ZimmerBuchung[], companions: Reisender[]) => {
+  const assignments: number[] = [];
+  for (let zIdx = 0; zIdx < rooms.length; zIdx++) {
+    const count = rooms[zIdx].gaesteAnzahl || 1;
+    for (let c = 0; c < count; c++) {
+      assignments.push(zIdx);
+    }
+  }
+  
+  const mainRoomIndex = assignments[0] !== undefined ? assignments[0] : 0;
+  const updatedCompanions = companions.map((comp, idx) => {
+    const compRoomIndex = assignments[idx + 1] !== undefined ? assignments[idx + 1] : 0;
+    return {
+      ...comp,
+      zimmerIndex: compRoomIndex
+    };
+  });
+  
+  return { mainRoomIndex, updatedCompanions };
 };
 
 export default function RegistrationForm({ onSubmit, onShowLegal, onShowAdmin }: RegistrationFormProps) {
@@ -72,8 +97,17 @@ export default function RegistrationForm({ onSubmit, onShowLegal, onShowAdmin }:
       if (!formData.telefonMobil.trim()) newErrors.telefonMobil = 'Mobiltelefon ist für Erreichbarkeit erforderlich.';
       if (!formData.abflughafen) {
         newErrors.abflughafen = 'Bitte wählen Sie einen Abflughafen.';
-      } else if (formData.abflughafen === 'Anderer Abflughafen (bitte angeben)' && !formData.abflughafenAnderer.trim()) {
+      } else if (formData.abflughafen === 'andere Flughäfen' && !formData.abflughafenAnderer.trim()) {
         newErrors.abflughafenAnderer = 'Bitte tragen Sie Ihren gewünschten Abflughafen ein.';
+      }
+
+      // Validierung Zimmer / Room Configuration
+      if (formData.zimmer && formData.zimmer.length > 0) {
+        formData.zimmer.forEach((z, idx) => {
+          if (!z.zimmertyp) {
+            newErrors[`zimmer_${idx}_zimmertyp`] = `Bitte wählen Sie eine Zimmerkategorie für Zimmer ${idx + 1}.`;
+          }
+        });
       }
 
       // Validierung Mitreisende
@@ -91,13 +125,25 @@ export default function RegistrationForm({ onSubmit, onShowLegal, onShowAdmin }:
           }
         }
       }
+
+      // Validierung Zimmer-Zuordnung bei mehreren Zimmern
+      if (formData.zimmer && formData.zimmer.length > 1) {
+        if (formData.zimmerIndex === undefined || formData.zimmerIndex === null || formData.zimmerIndex === '') {
+          newErrors.zimmerIndex = 'Bitte ordnen Sie dem Hauptreisenden ein Zimmer zu.';
+        }
+        if (formData.personenAnzahl > 1) {
+          for (let i = 0; i < formData.personenAnzahl - 1; i++) {
+            const companion = formData.mitreisende[i];
+            if (!companion || companion.zimmerIndex === undefined || companion.zimmerIndex === null || companion.zimmerIndex === '') {
+              newErrors[`companion_${i}_zimmerIndex`] = 'Bitte ordnen Sie diesem Mitreisenden ein Zimmer zu.';
+            }
+          }
+        }
+      }
     }
 
     if (step === 1) {
       // Schritt 1: Unterkunft & Optionen & Zusatzleistungen
-      if (!formData.zimmertyp) {
-        newErrors.zimmertyp = 'Bitte wählen Sie einen Zimmertyp aus.';
-      }
       if (formData.zusatzVerlaengerung && !formData.zusatzVerlaengerungText.trim()) {
         newErrors.zusatzVerlaengerungText = 'Bitte geben Sie den gewünschten Verlängerungszeitraum an.';
       }
@@ -163,26 +209,96 @@ export default function RegistrationForm({ onSubmit, onShowLegal, onShowAdmin }:
     }
   };
 
-  // Personenzahl und Mitreisende-Array verwalten
-  const handlePersonenAnzahlChange = (num: number) => {
+  // Zimmeranzahl und Belegung verwalten (Max 4 Zimmer)
+  const handleZimmerAnzahlChange = (num: number) => {
+    const updatedZimmer = [...(formData.zimmer || [{ gaesteAnzahl: 1, zimmertyp: '' }])];
+    if (num > updatedZimmer.length) {
+      while (updatedZimmer.length < num) {
+        updatedZimmer.push({ gaesteAnzahl: 1, zimmertyp: '' });
+      }
+    } else if (num < updatedZimmer.length) {
+      updatedZimmer.splice(num);
+    }
+    
+    // Gesamtpersonen kalkulieren
+    const totalGuests = updatedZimmer.reduce((sum, z) => sum + z.gaesteAnzahl, 0);
+    
+    // Mitreisende synchronisieren
     const updatedMitreisende = [...formData.mitreisende];
-    if (num > updatedMitreisende.length + 1) {
-      // Aufstocken
-      while (updatedMitreisende.length < num - 1) {
+    if (totalGuests > updatedMitreisende.length + 1) {
+      while (updatedMitreisende.length < totalGuests - 1) {
         updatedMitreisende.push({ vorname: '', nachname: '', geburtsdatum: '' });
       }
-    } else if (num < updatedMitreisende.length + 1) {
-      // Abschneiden
-      updatedMitreisende.splice(num - 1);
+    } else if (totalGuests < updatedMitreisende.length + 1) {
+      updatedMitreisende.splice(totalGuests - 1);
     }
+
+    // Automatische Zimmerzuteilung berechnen
+    const { mainRoomIndex, updatedCompanions } = applyDefaultRoomAssignments(updatedZimmer, updatedMitreisende);
+
     setFormData(prev => ({
       ...prev,
-      personenAnzahl: num,
-      mitreisende: updatedMitreisende
+      zimmer: updatedZimmer,
+      personenAnzahl: totalGuests,
+      mitreisende: updatedCompanions,
+      zimmerIndex: mainRoomIndex,
+      zimmertyp: updatedZimmer[0]?.zimmertyp || ''
     }));
   };
 
-  const updateCompanionField = (index: number, field: keyof Reisender, value: string) => {
+  const updateZimmerField = (index: number, field: keyof ZimmerBuchung, value: any) => {
+    const updatedZimmer = [...(formData.zimmer || [{ gaesteAnzahl: 1, zimmertyp: '' }])];
+    updatedZimmer[index] = {
+      ...updatedZimmer[index],
+      [field]: value
+    };
+
+    // Bei Personen-Änderung Belegung aktualisieren
+    let totalGuests = formData.personenAnzahl;
+    let updatedMitreisende = formData.mitreisende;
+    if (field === 'gaesteAnzahl') {
+      totalGuests = updatedZimmer.reduce((sum, z) => sum + z.gaesteAnzahl, 0);
+      updatedMitreisende = [...formData.mitreisende];
+      if (totalGuests > updatedMitreisende.length + 1) {
+        while (updatedMitreisende.length < totalGuests - 1) {
+          updatedMitreisende.push({ vorname: '', nachname: '', geburtsdatum: '' });
+        }
+      } else if (totalGuests < updatedMitreisende.length + 1) {
+        updatedMitreisende.splice(totalGuests - 1);
+      }
+    }
+
+    // Automatische Zimmerzuteilung berechnen wenn sich Personen oder Anzahl im Zimmer geändert hat
+    let mainRoomIndex = formData.zimmerIndex;
+    let updatedCompanions = updatedMitreisende;
+    if (field === 'gaesteAnzahl') {
+      const assigned = applyDefaultRoomAssignments(updatedZimmer, updatedMitreisende);
+      mainRoomIndex = assigned.mainRoomIndex;
+      updatedCompanions = assigned.updatedCompanions;
+    }
+
+    setFormData(prev => ({
+      ...prev,
+      zimmer: updatedZimmer,
+      personenAnzahl: totalGuests,
+      mitreisende: updatedCompanions,
+      zimmerIndex: mainRoomIndex,
+      // Legacysupport für zimmertyp (verwende das erste Zimmer für Tabellen)
+      zimmertyp: updatedZimmer[0]?.zimmertyp || ''
+    }));
+
+    // Fehler-Meldung zurücksetzen
+    const errKey = `zimmer_${index}_${field}`;
+    if (errors[errKey]) {
+      setErrors(prev => {
+        const copy = { ...prev };
+        delete copy[errKey];
+        return copy;
+      });
+    }
+  };
+
+  const updateCompanionField = (index: number, field: keyof Reisender, value: any) => {
     const updatedMitreisende = [...formData.mitreisende];
     updatedMitreisende[index] = {
       ...updatedMitreisende[index],
@@ -217,18 +333,13 @@ export default function RegistrationForm({ onSubmit, onShowLegal, onShowAdmin }:
     <div className="bg-white rounded-2xl border border-brand-gray/80 shadow-xl overflow-hidden" id="booking-form-card">
       {/* Brand Header & Twin-Action Selector */}
       <div className="bg-white p-6 md:p-8 border-b border-brand-gray/60" id="form-brand-header-integrated">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-brand-gray/50 pb-6 mb-6">
-          <div className="flex items-center gap-3">
-            <Logo />
-            <div className="border-l border-brand-gray/80 pl-3 py-1">
-              <span className="text-[10px] uppercase font-bold text-white bg-[#0f223d] px-2 py-0.5 rounded-full inline-block">Inhabergeführt</span>
-              <span className="text-[10px] text-gray-400 font-sans block mt-1">Über 30 Jahre Reiseservice</span>
-            </div>
-          </div>
-          <div className="text-left md:text-right font-sans">
-            <h2 className="text-sm font-display font-black text-brand-dark-brown">Reisebüro Art Reisen GmbH</h2>
-            <p className="text-[11px] text-gray-500 font-sans">Exklusiver Servicepartner für den ECDI Workshop, Fuerteventura</p>
-          </div>
+        <div className="border-b border-brand-gray/50 pb-6 mb-6">
+          <h2 className="text-lg md:text-xl font-display font-black text-brand-dark-brown">
+            Reisebüro art reisen GmbH
+          </h2>
+          <p className="text-xs md:text-sm text-gray-500 mt-1 font-sans font-medium">
+            Exklusiver Servicepartner für das ECDI Spring Camp auf Fuerteventura
+          </p>
         </div>
 
         {/* Both Key Actions Integrated into the Form */}
@@ -244,7 +355,6 @@ export default function RegistrationForm({ onSubmit, onShowLegal, onShowAdmin }:
             <div className="space-y-1">
               <div className="flex items-center gap-2 text-brand-blue">
                 <BookOpen className="w-5 h-5 stroke-[2]" />
-                <span className="font-display font-black text-xs uppercase tracking-wider">Option A</span>
               </div>
               <h3 className="font-display font-black text-sm text-brand-dark-brown mt-1.5 group-hover:text-brand-blue transition-colors">
                 Anmeldung zum wissenschaftlichen Programm
@@ -266,13 +376,12 @@ export default function RegistrationForm({ onSubmit, onShowLegal, onShowAdmin }:
             <div className="space-y-1">
               <div className="flex items-center gap-2 text-brand-orange">
                 <Plane className="w-5 h-5 stroke-[2]" />
-                <span className="font-display font-black text-xs uppercase tracking-wider">Option B</span>
               </div>
               <h3 className="font-display font-black text-sm text-brand-dark-text mt-1.5">
-                Unterkunft für den ECDI Workshop buchen
+                Unterkunft für das ECDI Spring Camp buchen
               </h3>
               <p className="text-[11px] text-gray-500 font-sans leading-relaxed mt-1">
-                Reservierung Ihres Hotelzimmers im Sheraton Resort Fuerteventura inklusive VIP-Transfers und optionalen Reiseflügen beim Profi Art Reisen.
+                Reservierung Ihres Hotelzimmers im Aldiana Fuerteventura incl. Flug , Transfer und Rail&Fly.
               </p>
             </div>
             
@@ -307,30 +416,114 @@ export default function RegistrationForm({ onSubmit, onShowLegal, onShowAdmin }:
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
             <div className="border-b border-brand-gray pb-2">
               <h3 className="text-lg font-display font-bold text-brand-dark-brown">Informationen zu den Reisenden</h3>
-              <p className="text-xs text-gray-500 font-sans mt-0.5">Tragen Sie hier alle anzumeldenden Personen ein.</p>
+              <p className="text-xs text-gray-500 font-sans mt-0.5">Tragen Sie hier alle anzumeldenden Personen ein und planen Sie Ihre Zimmer.</p>
             </div>
 
-            {/* Feld: Personenanzahl */}
-            <div className="space-y-2">
-              <label className="block text-sm font-display font-semibold text-brand-dark-text">
-                Wieviele Personen reisen insgesamt an? <span className="text-brand-orange">*</span>
-              </label>
-              <div className="flex gap-2">
-                {[1, 2, 3, 4, 5].map(num => (
-                  <button
-                    key={num}
-                    type="button"
-                    onClick={() => handlePersonenAnzahlChange(num)}
-                    className={`w-11 h-11 rounded-lg border-2 font-display font-black text-xs transition-all cursor-pointer
-                      ${formData.personenAnzahl === num
-                        ? 'bg-brand-orange text-white border-brand-orange shadow-md'
-                        : 'bg-white border-brand-gray text-brand-dark-text hover:border-gray-400'
-                      }
-                    `}
-                  >
-                    {num}
-                  </button>
-                ))}
+            {/* Zimmer- und Belegungsplanung (Max 4 Zimmer) */}
+            <div className="bg-brand-blue/5 p-5 rounded-2xl border border-brand-blue/20 space-y-5">
+              <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3 border-b border-brand-blue/15 pb-4">
+                <div>
+                  <h4 className="font-display font-black text-xs text-brand-dark-brown uppercase tracking-wider flex items-center gap-1.5">
+                    <BedDouble className="w-4 h-4 text-brand-blue" />
+                    Zimmer- und Belegungsplanung
+                  </h4>
+                  <p className="text-[10px] text-gray-400 font-sans mt-0.5">Kunden können maximal 4 Zimmer gleichzeitig buchen.</p>
+                </div>
+                
+                {/* Wieviele Zimmer Anfrage */}
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] font-display font-bold text-brand-dark-brown">Anzahl Zimmer:</span>
+                  <div className="flex gap-1 bg-white p-1 rounded-lg border border-brand-gray/60">
+                    {[1, 2, 3, 4].map(num => {
+                      const zimmerCount = formData.zimmer?.length || 1;
+                      const isSelected = zimmerCount === num;
+                      return (
+                        <button
+                          key={num}
+                          type="button"
+                          onClick={() => handleZimmerAnzahlChange(num)}
+                          className={`w-7 h-7 rounded-md font-display font-bold text-[11px] transition-all cursor-pointer flex items-center justify-center
+                            ${isSelected 
+                              ? 'bg-brand-blue text-white shadow-xs' 
+                              : 'text-gray-600 hover:bg-gray-100'
+                            }
+                          `}
+                        >
+                          {num}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              {/* Jedes Zimmer einzeln konfigurieren */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {(formData.zimmer || [{ gaesteAnzahl: 1, zimmertyp: '' }]).map((z, index) => {
+                  return (
+                    <div key={index} className="bg-white p-4 rounded-xl border border-brand-gray/80 shadow-xs space-y-4">
+                      <div className="flex items-center justify-between border-b border-gray-100 pb-2">
+                        <span className="font-display font-black text-[11px] text-brand-blue uppercase tracking-wider flex items-center gap-1">
+                          <BedDouble className="w-3.5 h-3.5 text-brand-blue/80" />
+                          Zimmer {index + 1}
+                        </span>
+                        
+                        {/* Wieviele Personen pro Zimmer */}
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-bold text-gray-400">Gäste:</span>
+                          <div className="flex gap-0.5 bg-gray-50 p-0.5 rounded-md border border-gray-200">
+                            {[1, 2, 3, 4].map(pNum => {
+                              const isSelected = z.gaesteAnzahl === pNum;
+                              return (
+                                <button
+                                  key={pNum}
+                                  type="button"
+                                  onClick={() => updateZimmerField(index, 'gaesteAnzahl', pNum)}
+                                  className={`px-2 py-0.5 rounded-sm font-display font-semibold text-[10px] transition-all cursor-pointer
+                                    ${isSelected 
+                                      ? 'bg-brand-orange text-white shadow-xs' 
+                                      : 'text-gray-600 hover:bg-white'
+                                    }
+                                  `}
+                                >
+                                  {pNum}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Ausgewähltes Zimmer */}
+                      <div className="space-y-1.5">
+                        <label className="block text-[10px] font-display font-bold text-brand-dark-brown">
+                          Zimmerkategorie wählen <span className="text-brand-orange">*</span>
+                        </label>
+                        <select
+                          value={z.zimmertyp}
+                          onChange={(e) => updateZimmerField(index, 'zimmertyp', e.target.value as any)}
+                          className="w-full bg-white px-2.5 py-1.5 text-xs border border-brand-gray rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-blue font-sans text-brand-dark-text"
+                        >
+                          <option value="">-- Zimmertyp aussuchen --</option>
+                          {ROOM_TYPES.map(rt => (
+                            <option key={rt} value={rt}>{rt}</option>
+                          ))}
+                        </select>
+                        {errors[`zimmer_${index}_zimmertyp`] && (
+                          <p className="text-[10px] text-rose-600 font-sans mt-0.5 font-semibold">{errors[`zimmer_${index}_zimmertyp`]}</p>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Zusammenfassung der Zimmer */}
+              <div className="bg-brand-orange/5 border border-brand-orange/20 p-3 rounded-xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 text-xs">
+                <span className="text-brand-dark-brown font-semibold font-sans">Gewählte Belegung:</span>
+                <span className="font-display font-black text-brand-orange text-[11px] uppercase tracking-wider">
+                  {(formData.zimmer || []).length} Zimmer | {formData.personenAnzahl} Personen insgesamt (haupt- & mitreisende)
+                </span>
               </div>
             </div>
 
@@ -467,6 +660,29 @@ export default function RegistrationForm({ onSubmit, onShowLegal, onShowAdmin }:
                 {errors.telefonMobil && <p className="text-[11px] text-rose-600 font-sans">{errors.telefonMobil}</p>}
                 <p className="text-[9px] text-gray-400 font-sans italic">Dringend am Zielort benötigt.</p>
               </div>
+
+              {/* Zimmer-Zuordnung für Hauptreisenden */}
+              {formData.zimmer && formData.zimmer.length > 1 && (
+                <div className="space-y-1.5 pt-2 border-t border-brand-gray/40">
+                  <label className="block text-[11px] font-display font-bold text-brand-dark-brown select-none flex items-center gap-1">
+                    <span>Zimmerschlüssel-Zuordnung: Welchem Zimmer gehört dieser Reisende an?</span>
+                    <span className="text-brand-orange">*</span>
+                  </label>
+                  <select
+                    value={formData.zimmerIndex !== undefined ? formData.zimmerIndex : ''}
+                    onChange={(e) => updateField('zimmerIndex', e.target.value === '' ? '' : parseInt(e.target.value))}
+                    className="w-full bg-white px-3 py-2 text-xs border border-brand-gray rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-blue font-sans text-brand-dark-text"
+                  >
+                    <option value="">-- Zimmer auswählen --</option>
+                    {formData.zimmer.map((z, idx) => (
+                      <option key={idx} value={idx}>
+                        Zimmer {idx + 1} ({z.zimmertyp || 'Kategorie noch unbestimmt'})
+                      </option>
+                    ))}
+                  </select>
+                  {errors.zimmerIndex && <p className="text-[11px] text-rose-600 font-sans mt-0.5">{errors.zimmerIndex}</p>}
+                </div>
+              )}
             </div>
 
             {/* Mitreisende (Konditional ab 2 Personen) */}
@@ -528,6 +744,31 @@ export default function RegistrationForm({ onSubmit, onShowLegal, onShowAdmin }:
                         )}
                       </div>
                     </div>
+
+                    {/* Zimmer-Zuordnung für Mitreisende */}
+                    {formData.zimmer && formData.zimmer.length > 1 && (
+                      <div className="space-y-1.5 pt-2 border-t border-brand-gray/40">
+                        <label className="block text-[11px] font-display font-bold text-brand-dark-brown select-none flex items-center gap-1">
+                          <span>Zimmerschlüssel-Zuordnung: Welchem Zimmer gehört dieser Reisende an?</span>
+                          <span className="text-brand-orange">*</span>
+                        </label>
+                        <select
+                          value={formData.mitreisende[index]?.zimmerIndex !== undefined ? formData.mitreisende[index].zimmerIndex : ''}
+                          onChange={(e) => updateCompanionField(index, 'zimmerIndex' as any, e.target.value === '' ? '' : parseInt(e.target.value))}
+                          className="w-full bg-white px-3 py-2 text-xs border border-brand-gray rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-blue font-sans text-brand-dark-text"
+                        >
+                          <option value="">-- Zimmer auswählen --</option>
+                          {formData.zimmer.map((z, idx) => (
+                            <option key={idx} value={idx}>
+                              Zimmer {idx + 1} ({z.zimmertyp || 'Kategorie noch unbestimmt'})
+                            </option>
+                          ))}
+                        </select>
+                        {errors[`companion_${index}_zimmerIndex`] && (
+                          <p className="text-[10px] text-rose-600 font-sans mt-0.5">{errors[`companion_${index}_zimmerIndex`]}</p>
+                        )}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -553,7 +794,7 @@ export default function RegistrationForm({ onSubmit, onShowLegal, onShowAdmin }:
                         type="button"
                         onClick={() => {
                           updateField('abflughafen', ap);
-                          if (ap !== 'Anderer Abflughafen (bitte angeben)') {
+                          if (ap !== 'andere Flughäfen') {
                             updateField('abflughafenAnderer', '');
                           }
                         }}
@@ -571,9 +812,9 @@ export default function RegistrationForm({ onSubmit, onShowLegal, onShowAdmin }:
                 </div>
                 {errors.abflughafen && <p className="text-xs text-rose-600">{errors.abflughafen}</p>}
 
-                {formData.abflughafen === 'Anderer Abflughafen (bitte angeben)' && (
+                {formData.abflughafen === 'andere Flughäfen' && (
                   <motion.div initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} className="space-y-1 pt-2">
-                    <label className="block text-[11px] font-display font-bold text-brand-dark-brown">Anderer Abflughafen (bitte eingeben): <span className="text-brand-orange">*</span></label>
+                    <label className="block text-[11px] font-display font-bold text-brand-dark-brown">Welcher andere Abflughafen? <span className="text-brand-orange">*</span></label>
                     <input
                       type="text"
                       value={formData.abflughafenAnderer}

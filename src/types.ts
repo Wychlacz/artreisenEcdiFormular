@@ -2,6 +2,12 @@ export interface Reisender {
   vorname: string;
   nachname: string;
   geburtsdatum: string;
+  zimmerIndex?: number;
+}
+
+export interface ZimmerBuchung {
+  gaesteAnzahl: number;
+  zimmertyp: 'Einzelzimmer ohne Meerblick' | 'Einzelzimmer mit Meerblick' | 'Doppelzimmer ohne Meerblick' | 'Doppelzimmer mit Meerblick' | 'Atlantiksuite' | 'Juniorsuite' | 'Familienzimmer' | '';
 }
 
 export interface Registration {
@@ -20,10 +26,14 @@ export interface Registration {
   land: string;
   telefonMobil: string;
   email: string;
+  zimmerIndex?: number;
   
   // Anzahl Personen & Mitreisende
   personenAnzahl: number;
   mitreisende: Reisender[];
+  
+  // Zimmer Logik (Max 4 Zimmer)
+  zimmer?: ZimmerBuchung[];
   
   // Flug & Abflughafen
   abflughafen: string;

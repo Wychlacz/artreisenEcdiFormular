@@ -66,6 +66,26 @@ export default function App() {
     const updated = [newRegistration, ...registrations];
     saveRegistrations(updated);
     setSubmittedRegistration(newRegistration);
+
+    // Automatischen Mail-Versand an info@artreisen.de anstoßen
+    fetch('/api/send-email', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ registration: newRegistration }),
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          console.log('Automatischer Buchungsemailversand an info@artreisen.de erfolgreich übergeben.');
+        } else {
+          console.error('Fehler beim Buchungsemailversand:', data.error);
+        }
+      })
+      .catch(err => {
+        console.error('Netzwerkfehler beim automatischen Buchungsemailversand:', err);
+      });
   };
 
   // Status-Änderung in der Admin-Konsole
