@@ -27,6 +27,15 @@ const DEFAULT_FORM_STATE = {
   telefonMobil: '',
   email: '',
   zimmerIndex: 0,
+  isFirmenrechnung: false,
+  firmenName: '',
+  firmenAnschrift: '',
+  firmenAnsprechpartner: '',
+  isHauptanmelderReisender: true,
+  abweichenderReisenderAnrede: '' as 'Herr' | 'Frau' | 'Divers' | '',
+  abweichenderReisenderVorname: '',
+  abweichenderReisenderNachname: '',
+  abweichenderReisenderGeburtsdatum: '',
   personenAnzahl: 1,
   mitreisende: [] as Reisender[],
   zimmer: [
@@ -39,6 +48,12 @@ const DEFAULT_FORM_STATE = {
   pauschalreiseRichtlinien: '' as 'Ja' | 'Nein' | '',
   versicherungInfoBenoetigt: '' as 'Ja' | 'Nein' | '',
   flexOption: '' as 'Ja' | 'Nein' | '',
+  zahlungsart: '' as 'Lastschrift' | 'Überweisung' | 'Kreditkarte' | '',
+  zahlungIban: '',
+  zahlungKontoinhaber: '',
+  zahlungKreditkarteNummer: '',
+  zahlungKreditkarteGueltig: '',
+  zahlungKreditkarteInhaber: '',
   dsgvoEinverstaendnis: false,
   zusatzVerlaengerung: false,
   zusatzVerlaengerungText: '',
@@ -47,6 +62,8 @@ const DEFAULT_FORM_STATE = {
   zusatzSitzplatz: false,
   zusatzSitzplatzText: '',
   zusatzPrivatTransfer: false,
+  zusatzTransferAuswahlPrivat: false,
+  zusatzTransferAuswahlMietwagen: false,
   zusatzVersicherungAngebot: false,
   zusatzRailAndFly: false,
 };
@@ -101,6 +118,32 @@ export default function RegistrationForm({ onSubmit, onShowLegal, onShowAdmin }:
         newErrors.abflughafenAnderer = 'Bitte tragen Sie Ihren gewünschten Abflughafen ein.';
       }
 
+      // Validierung Firmenrechnung
+      if (formData.isFirmenrechnung) {
+        if (!formData.firmenName?.trim()) {
+          newErrors.firmenName = 'Firmenname ist ein Pflichtfeld für Firmenrechnungen.';
+        }
+        if (!formData.firmenAnschrift?.trim()) {
+          newErrors.firmenAnschrift = 'Firmenanschrift ist ein Pflichtfeld für Firmenrechnungen.';
+        }
+      }
+
+      // Validierung abweichender Reisender für Zimmer 1 (falls Hauptanmelder nicht der Reisende ist)
+      if (formData.isHauptanmelderReisender === false) {
+        if (!formData.abweichenderReisenderAnrede) {
+          newErrors.abweichenderReisenderAnrede = 'Anrede des Reisenden ist ein Pflichtfeld.';
+        }
+        if (!formData.abweichenderReisenderVorname?.trim()) {
+          newErrors.abweichenderReisenderVorname = 'Vorname des Reisenden ist erforderlich.';
+        }
+        if (!formData.abweichenderReisenderNachname?.trim()) {
+          newErrors.abweichenderReisenderNachname = 'Nachname des Reisenden ist erforderlich.';
+        }
+        if (!formData.abweichenderReisenderGeburtsdatum) {
+          newErrors.abweichenderReisenderGeburtsdatum = 'Geburtsdatum des Reisenden ist erforderlich.';
+        }
+      }
+
       // Validierung Zimmer / Room Configuration
       if (formData.zimmer && formData.zimmer.length > 0) {
         formData.zimmer.forEach((z, idx) => {
@@ -143,7 +186,7 @@ export default function RegistrationForm({ onSubmit, onShowLegal, onShowAdmin }:
     }
 
     if (step === 1) {
-      // Schritt 1: Unterkunft & Optionen & Zusatzleistungen
+      // Schritt 1: Zusatzleistungen, Wichtige Angaben & Bestätigungen
       if (formData.zusatzVerlaengerung && !formData.zusatzVerlaengerungText.trim()) {
         newErrors.zusatzVerlaengerungText = 'Bitte geben Sie den gewünschten Verlängerungszeitraum an.';
       }
@@ -153,10 +196,8 @@ export default function RegistrationForm({ onSubmit, onShowLegal, onShowAdmin }:
       if (formData.zusatzSitzplatz && !formData.zusatzSitzplatzText.trim()) {
         newErrors.zusatzSitzplatzText = 'Bitte geben Sie Ihren Sitzplatzwunsch an.';
       }
-    }
 
-    if (step === 2) {
-      // Schritt 2: Wichtige Angaben (Ja / Nein)
+      // Wichtige Angaben (Ja / Nein)
       if (!formData.agbKenntnis) {
         newErrors.agbKenntnis = 'Bitte beantworten Sie diese Frage.';
       } else if (formData.agbKenntnis === 'Nein') {
@@ -175,6 +216,17 @@ export default function RegistrationForm({ onSubmit, onShowLegal, onShowAdmin }:
 
       if (!formData.flexOption) {
         newErrors.flexOption = 'Bitte beantworten Sie diese Frage (Ja oder Nein).';
+      }
+
+      if (!formData.zahlungsart) {
+        newErrors.zahlungsart = 'Bitte wählen Sie Ihre bevorzugte Zahlungsart.';
+      } else if (formData.zahlungsart === 'Lastschrift') {
+        if (!formData.zahlungIban) {
+          newErrors.zahlungIban = 'Bitte geben Sie Ihre IBAN für den Lastschrift-Einzug ein.';
+        }
+        if (!formData.zahlungKontoinhaber) {
+          newErrors.zahlungKontoinhaber = 'Bitte geben Sie den Kontoinhaber ein.';
+        }
       }
 
       if (!formData.dsgvoEinverstaendnis) {
@@ -324,9 +376,8 @@ export default function RegistrationForm({ onSubmit, onShowLegal, onShowAdmin }:
   };
 
   const steps = [
-    { title: 'Reisende & Flug', subtitle: 'Personen & Abflughafen' },
-    { title: 'Unterkunft & Zusatz', subtitle: 'Zimmertyp & Services' },
-    { title: 'Rechtliches & Bestätigung', subtitle: 'AGBs & Richtlinien' }
+    { title: 'Reisende & Unterkunft', subtitle: 'Gäste, Zimmer & Flug' },
+    { title: 'Zusatzleistungen & Rechtliches', subtitle: 'Services, AGB & Erklärungen' }
   ];
 
   return (
@@ -387,7 +438,7 @@ export default function RegistrationForm({ onSubmit, onShowLegal, onShowAdmin }:
             
             <div className="inline-flex items-center gap-2 mt-4 text-xs font-display font-black text-brand-orange">
               <span className="inline-flex w-2.5 h-2.5 bg-brand-orange rounded-full animate-ping" />
-              <span>Hier Formular unten ausfüllen (Schritt {currentStep + 1} von 3)</span>
+              <span>Hier Formular unten ausfüllen (Schritt {currentStep + 1} von 2)</span>
             </div>
           </div>
 
@@ -661,28 +712,191 @@ export default function RegistrationForm({ onSubmit, onShowLegal, onShowAdmin }:
                 <p className="text-[9px] text-gray-400 font-sans italic">Dringend am Zielort benötigt.</p>
               </div>
 
-              {/* Zimmer-Zuordnung für Hauptreisenden */}
-              {formData.zimmer && formData.zimmer.length > 1 && (
-                <div className="space-y-1.5 pt-2 border-t border-brand-gray/40">
-                  <label className="block text-[11px] font-display font-bold text-brand-dark-brown select-none flex items-center gap-1">
-                    <span>Zimmerschlüssel-Zuordnung: Welchem Zimmer gehört dieser Reisende an?</span>
-                    <span className="text-brand-orange">*</span>
-                  </label>
-                  <select
-                    value={formData.zimmerIndex !== undefined ? formData.zimmerIndex : ''}
-                    onChange={(e) => updateField('zimmerIndex', e.target.value === '' ? '' : parseInt(e.target.value))}
-                    className="w-full bg-white px-3 py-2 text-xs border border-brand-gray rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-blue font-sans text-brand-dark-text"
-                  >
-                    <option value="">-- Zimmer auswählen --</option>
-                    {formData.zimmer.map((z, idx) => (
-                      <option key={idx} value={idx}>
-                        Zimmer {idx + 1} ({z.zimmertyp || 'Kategorie noch unbestimmt'})
-                      </option>
-                    ))}
-                  </select>
-                  {errors.zimmerIndex && <p className="text-[11px] text-rose-600 font-sans mt-0.5">{errors.zimmerIndex}</p>}
+              {/* Zimmer-Zuordnung & Belegungsdetails für den Hauptreisenden */}
+              {formData.zimmer && formData.zimmer.length > 0 && (
+                <div className="space-y-4 pt-3 border-t border-brand-gray/40">
+                  <div className="bg-brand-blue/5 p-4 rounded-xl border border-brand-blue/15 space-y-3">
+                    <div className="flex items-center gap-1.5 font-display font-bold text-[11px] text-brand-dark-brown uppercase tracking-wider">
+                      <BedDouble className="w-4 h-4 text-brand-blue" />
+                      <span>Zimmerbelegung für Zimmer 1</span>
+                    </div>
+
+                    <div className="text-xs text-brand-dark-brown">
+                      Zimmertyp: <strong className="text-brand-blue">{formData.zimmer[0]?.zimmertyp || 'Kategorie noch unbestimmt'}</strong>
+                    </div>
+
+                    {/* Abfrage, ob der Hauptanmelder selbst reist */}
+                    <div className="flex items-start gap-2 pt-1 border-t border-brand-gray/20">
+                      <input
+                        type="checkbox"
+                        id="isHauptanmelderReisender"
+                        checked={formData.isHauptanmelderReisender}
+                        onChange={(e) => updateField('isHauptanmelderReisender', e.target.checked)}
+                        className="w-4 h-4 text-brand-blue border-brand-gray rounded focus:ring-brand-blue cursor-pointer mt-0.5 flex-shrink-0"
+                      />
+                      <label htmlFor="isHauptanmelderReisender" className="text-xs font-display font-semibold text-brand-dark-brown select-none cursor-pointer leading-tight">
+                        <span>Der Hauptanmelder (oben eingetragen) ist selbst Reiseteilnehmer in Zimmer 1</span>
+                      </label>
+                    </div>
+
+                    {/* Felder für abweichenden Reisenden */}
+                    {!formData.isHauptanmelderReisender && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        className="space-y-3 pt-2 pl-4 border-l-2 border-brand-orange/40 overflow-hidden"
+                      >
+                        <p className="text-[10px] text-brand-orange font-bold font-sans">
+                          Bitte tragen Sie den Namen und das Geburtsdatum des tatsächlichen Reisegastes ein:
+                        </p>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                          <div className="space-y-1.5">
+                            <label className="block text-[10px] font-display font-bold text-brand-dark-brown">Anrede <span className="text-brand-orange">*</span></label>
+                            <select
+                              value={formData.abweichenderReisenderAnrede || ''}
+                              onChange={(e) => updateField('abweichenderReisenderAnrede', e.target.value)}
+                              className="w-full bg-white px-2.5 py-1.5 text-xs border border-brand-gray rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-blue font-sans text-brand-dark-text"
+                            >
+                              <option value="">Bitte wählen...</option>
+                              <option value="Herr">Herr</option>
+                              <option value="Frau">Frau</option>
+                              <option value="Divers">Divers</option>
+                            </select>
+                            {errors.abweichenderReisenderAnrede && <p className="text-[9px] text-rose-600 font-sans">{errors.abweichenderReisenderAnrede}</p>}
+                          </div>
+
+                          <div className="space-y-1.5">
+                            <label className="block text-[10px] font-display font-bold text-brand-dark-brown">Vorname <span className="text-brand-orange">*</span></label>
+                            <input
+                              type="text"
+                              value={formData.abweichenderReisenderVorname || ''}
+                              onChange={(e) => updateField('abweichenderReisenderVorname', e.target.value)}
+                              className="w-full bg-white px-2.5 py-1.5 text-xs border border-brand-gray rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-blue font-sans"
+                              placeholder="Vorname laut Reisepass"
+                            />
+                            {errors.abweichenderReisenderVorname && <p className="text-[9px] text-rose-600 font-sans">{errors.abweichenderReisenderVorname}</p>}
+                          </div>
+
+                          <div className="space-y-1.5">
+                            <label className="block text-[10px] font-display font-bold text-brand-dark-brown">Nachname <span className="text-brand-orange">*</span></label>
+                            <input
+                              type="text"
+                              value={formData.abweichenderReisenderNachname || ''}
+                              onChange={(e) => updateField('abweichenderReisenderNachname', e.target.value)}
+                              className="w-full bg-white px-2.5 py-1.5 text-xs border border-brand-gray rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-blue font-sans"
+                              placeholder="Nachname laut Reisepass"
+                            />
+                            {errors.abweichenderReisenderNachname && <p className="text-[9px] text-rose-600 font-sans">{errors.abweichenderReisenderNachname}</p>}
+                          </div>
+                        </div>
+
+                        <div className="space-y-1.5 max-w-full md:max-w-xs">
+                          <label className="block text-[10px] font-display font-bold text-brand-dark-brown">Geburtsdatum <span className="text-brand-orange">*</span></label>
+                          <input
+                            type="date"
+                            value={formData.abweichenderReisenderGeburtsdatum || ''}
+                            onChange={(e) => updateField('abweichenderReisenderGeburtsdatum', e.target.value)}
+                            className="w-full bg-white px-2.5 py-1.5 text-xs border border-brand-gray rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-blue font-sans"
+                            max={new Date().toISOString().split('T')[0]}
+                          />
+                          {errors.abweichenderReisenderGeburtsdatum && <p className="text-[9px] text-rose-600 font-sans">{errors.abweichenderReisenderGeburtsdatum}</p>}
+                        </div>
+                      </motion.div>
+                    )}
+                  </div>
+
+                  {formData.zimmer.length > 1 && (
+                    <div className="space-y-1.5 bg-brand-orange/5 p-4 rounded-xl border border-brand-orange/15">
+                      <label className="block text-[11px] font-display font-bold text-brand-dark-brown select-none flex items-center gap-1">
+                        <span>Zimmerschlüssel-Zuordnung: Welchem Zimmer gehört dieser Reisende an?</span>
+                        <span className="text-brand-orange">*</span>
+                      </label>
+                      <select
+                        value={formData.zimmerIndex !== undefined ? formData.zimmerIndex : ''}
+                        onChange={(e) => updateField('zimmerIndex', e.target.value === '' ? '' : parseInt(e.target.value))}
+                        className="w-full bg-white px-3 py-2 text-xs border border-brand-gray rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-blue font-sans text-brand-dark-text"
+                      >
+                        <option value="">-- Zimmer auswählen --</option>
+                        {formData.zimmer.map((z, idx) => (
+                          <option key={idx} value={idx}>
+                            Zimmer {idx + 1} ({z.zimmertyp || 'Kategorie noch unbestimmt'})
+                          </option>
+                        ))}
+                      </select>
+                      {errors.zimmerIndex && <p className="text-[11px] text-rose-600 font-sans mt-0.5">{errors.zimmerIndex}</p>}
+                    </div>
+                  )}
                 </div>
               )}
+
+              {/* Optional: Firmenrechnung */}
+              <div className="space-y-3 pt-4 border-t border-brand-gray/40">
+                <div className="flex items-start gap-2 pt-1">
+                  <input
+                    type="checkbox"
+                    id="isFirmenrechnung"
+                    checked={formData.isFirmenrechnung || false}
+                    onChange={(e) => updateField('isFirmenrechnung', e.target.checked)}
+                    className="w-4 h-4 text-brand-blue border-brand-gray rounded focus:ring-brand-blue cursor-pointer mt-0.5 flex-shrink-0"
+                  />
+                  <label htmlFor="isFirmenrechnung" className="text-xs font-display font-bold text-brand-dark-brown select-none cursor-pointer flex items-start gap-1.5 leading-relaxed">
+                    <Sheet className="w-4 h-4 text-brand-blue/80 mt-0.5 flex-shrink-0" />
+                    <span>Sollte die Rechnung auf ein Unternehmen ausgestellt werden, benötigen wir bitte noch die abweichende Firmenanschrift. Bitte teilen Sie uns in diesem Fall den exakten Firmennamen und – falls gewünscht – einen zusätzlichen Ansprechpartner (z. B. Sekretariat oder Abteilung) mit.</span>
+                  </label>
+                </div>
+                
+                {formData.isFirmenrechnung && (
+                  <motion.div 
+                    initial={{ opacity: 0, height: 0 }} 
+                    animate={{ opacity: 1, height: 'auto' }} 
+                    className="space-y-3 pl-6 pt-2 border-l-2 border-brand-orange/40 overflow-hidden"
+                  >
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <label className="block text-[10px] font-display font-bold text-brand-dark-brown">
+                          Firmenname <span className="text-brand-orange">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={formData.firmenName || ''}
+                          onChange={(e) => updateField('firmenName', e.target.value)}
+                          className="w-full bg-white px-3 py-1.5 text-xs border border-brand-gray rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-blue font-sans text-brand-dark-text"
+                          placeholder="z.B. Cloud Services GmbH"
+                        />
+                        {errors.firmenName && <p className="text-[10px] text-rose-600 font-sans">{errors.firmenName}</p>}
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="block text-[10px] font-display font-bold text-brand-dark-brown">
+                          Ansprechpartner (falls vom Hauptreisenden unterschiedlich)
+                        </label>
+                        <input
+                          type="text"
+                          value={formData.firmenAnsprechpartner || ''}
+                          onChange={(e) => updateField('firmenAnsprechpartner', e.target.value)}
+                          className="w-full bg-white px-3 py-1.5 text-xs border border-brand-gray rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-blue font-sans text-brand-dark-text"
+                          placeholder="z.B. Frau Sarah Müller oder leer lassen"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="block text-[10px] font-display font-bold text-brand-dark-brown">
+                        Firmenanschrift <span className="text-brand-orange">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.firmenAnschrift || ''}
+                        onChange={(e) => updateField('firmenAnschrift', e.target.value)}
+                        className="w-full bg-white px-3 py-1.5 text-xs border border-brand-gray rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-blue font-sans text-brand-dark-text"
+                        placeholder="z.B. Musterstr. 12, 12345 Berlin, Deutschland"
+                      />
+                      {errors.firmenAnschrift && <p className="text-[10px] text-rose-600 font-sans">{errors.firmenAnschrift}</p>}
+                    </div>
+                  </motion.div>
+                )}
+              </div>
             </div>
 
             {/* Mitreisende (Konditional ab 2 Personen) */}
@@ -831,61 +1045,22 @@ export default function RegistrationForm({ onSubmit, onShowLegal, onShowAdmin }:
           </motion.div>
         )}
 
-        {/* SCHRITT 1: UNTERKUNFT & ZUSATZLEISTUNGEN */}
+        {/* SCHRITT 1: ZUSATZLEISTUNGEN & RECHTLICHES */}
         {currentStep === 1 && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
             <div className="border-b border-brand-gray pb-2">
-              <h3 className="text-lg font-display font-bold text-brand-dark-brown">Unterkunft & Zusatzleistungen</h3>
-              <p className="text-xs text-gray-500 font-sans mt-0.5">Wählen Sie das perfekte Zimmer und optionale Zusatzservices.</p>
+              <h3 className="text-lg font-display font-bold text-brand-dark-brown">Zusatzleistungen & Rechtliches</h3>
+              <p className="text-xs text-gray-500 font-sans mt-0.5">Gestalten Sie Ihre Reise individuell und bestätigen Sie die rechtlichen Richtlinien.</p>
             </div>
 
-            {/* Zimmertyp-Auswahl */}
-            <div className="space-y-3">
-              <label className="block text-sm font-display font-bold text-brand-dark-text">
-                Welchen Zimmertyp wünschen Sie im Resort? <span className="text-brand-orange">*</span>
-              </label>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {ROOM_TYPES.map(rt => {
-                  const isSelected = formData.zimmertyp === rt;
-                  return (
-                    <button
-                      key={rt}
-                      type="button"
-                      onClick={() => updateField('zimmertyp', rt)}
-                      className={`text-left p-4 border rounded-xl flex items-center justify-between cursor-pointer transition-all
-                        ${isSelected 
-                          ? 'border-brand-blue bg-brand-blue/5 shadow-md scale-[1.01]' 
-                          : 'bg-white border-brand-gray hover:border-gray-400'
-                        }
-                      `}
-                    >
-                      <div className="space-y-1">
-                        <span className="block font-display font-extrabold text-xs text-brand-dark-brown uppercase tracking-wider">{rt}</span>
-                        <span className="block text-[10px] text-gray-400 font-sans leading-relaxed">
-                          {rt.includes('Meerblick') ? 'Traumhafte Panorama-Aussicht direkt aufs offene Meer' : 'Ruhige Lage zum idyllischen Garten oder Innenhof'}
-                        </span>
-                      </div>
-                      <div className={`w-5 h-5 rounded-full border flex items-center justify-center shrink-0 ml-3
-                        ${isSelected ? 'border-brand-blue bg-brand-blue text-white' : 'border-gray-300 bg-white'}
-                      `}>
-                        {isSelected && <div className="w-2.5 h-2.5 rounded-full bg-white" />}
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-              {errors.zimmertyp && <p className="text-xs text-rose-600">{errors.zimmertyp}</p>}
-            </div>
-
-            {/* Zusatzleistungen (Absenden und Zusatzleistungen) */}
+            {/* Zusatzleistungen (Sonderwünsche) */}
             <div className="bg-brand-light-bg/40 p-6 rounded-2xl border border-brand-gray space-y-4">
               <div className="border-b border-brand-gray/80 pb-2">
                 <span className="inline-flex items-center gap-1.5 text-xs font-display font-bold text-brand-orange uppercase tracking-wider">
                   <Sparkles className="w-4 h-4 fill-brand-orange text-brand-orange" />
                   Zusatzleistungen & Sonderwünsche
                 </span>
-                <p className="text-[10px] text-gray-400 font-sans mt-0.5">Wählen Sie optionale Extras für Ihren Urlaub aus.</p>
+                <p className="text-[10px] text-gray-400 font-sans mt-0.5">Wählen Sie optionale Extras für Ihren Urlaub aus (optional).</p>
               </div>
 
               <div className="space-y-4 font-sans text-xs text-brand-dark-text">
@@ -985,15 +1160,61 @@ export default function RegistrationForm({ onSubmit, onShowLegal, onShowAdmin }:
 
                 {/* 4. Privat-Transfer */}
                 <div className="border-t border-brand-gray/50 pt-3">
-                  <label className="inline-flex items-center gap-3 cursor-pointer">
+                  <label className="inline-flex items-start gap-3 cursor-pointer">
                     <input
                       type="checkbox"
                       checked={formData.zusatzPrivatTransfer}
-                      onChange={(e) => updateField('zusatzPrivatTransfer', e.target.checked)}
-                      className="border-brand-gray text-brand-orange rounded-xs"
+                      onChange={(e) => {
+                        const checked = e.target.checked;
+                        updateField('zusatzPrivatTransfer', checked);
+                        if (checked) {
+                          updateField('zusatzTransferAuswahlPrivat', true);
+                          updateField('zusatzTransferAuswahlMietwagen', false);
+                        } else {
+                          updateField('zusatzTransferAuswahlPrivat', false);
+                          updateField('zusatzTransferAuswahlMietwagen', false);
+                        }
+                      }}
+                      className="mt-1 border-brand-gray text-brand-orange rounded-xs"
                     />
-                    <span className="font-semibold text-xs text-brand-dark-brown">Ich möchte einen Privat-Transfer (vom Flughafen Puerto del Rosario direkt zum Resort)</span>
+                    <div className="flex flex-col">
+                      <span className="font-semibold text-xs text-brand-dark-brown">Ich möchte einen Privat-Transfer oder Mietwagen ab/bis Flughafen Fuerteventura</span>
+                    </div>
                   </label>
+
+                  {/* Sub-Auswahl für Privattransfer / Mietwagen */}
+                  <AnimatePresence>
+                    {formData.zusatzPrivatTransfer && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="pl-7 mt-2 space-y-2 overflow-hidden"
+                      >
+                        <p className="text-[10px] text-gray-500 font-sans mb-1">Bitte wählen Sie eine oder beide Optionen:</p>
+                        <div className="flex flex-wrap gap-4">
+                          <label className="inline-flex items-center gap-2 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={formData.zusatzTransferAuswahlPrivat}
+                              onChange={(e) => updateField('zusatzTransferAuswahlPrivat', e.target.checked)}
+                              className="border-brand-gray text-brand-orange rounded-xs w-3.5 h-3.5"
+                            />
+                            <span className="text-xs text-brand-dark-brown font-medium">Privattransfer</span>
+                          </label>
+                          <label className="inline-flex items-center gap-2 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={formData.zusatzTransferAuswahlMietwagen}
+                              onChange={(e) => updateField('zusatzTransferAuswahlMietwagen', e.target.checked)}
+                              className="border-brand-gray text-brand-orange rounded-xs w-3.5 h-3.5"
+                            />
+                            <span className="text-xs text-brand-dark-brown font-medium">Mietwagen</span>
+                          </label>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
 
                 {/* 5. Versicherung Angebot */}
@@ -1011,38 +1232,27 @@ export default function RegistrationForm({ onSubmit, onShowLegal, onShowAdmin }:
 
                 {/* 6. Rail & Fly */}
                 <div className="border-t border-brand-gray/50 pt-3">
-                  <label className="inline-flex items-center gap-3 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={formData.zusatzRailAndFly}
-                      onChange={(e) => updateField('zusatzRailAndFly', e.target.checked)}
-                      className="border-brand-gray text-brand-orange rounded-xs"
-                    />
-                    <span className="font-semibold text-xs text-brand-dark-brown">Ich möchte ein Angebot für Rail & Fly (Zug-zum-Flug Bundesweit)</span>
-                  </label>
+                  <div className="flex items-start gap-3 bg-brand-orange/5 border border-brand-orange/20 p-3.5 rounded-xl">
+                    <span className="text-brand-orange text-sm mt-0.5 font-sans">ℹ️</span>
+                    <div className="flex flex-col">
+                      <span className="font-display font-black text-xs md:text-sm text-brand-orange uppercase tracking-wide leading-relaxed">
+                        Bei Buchungen incl. Flug ist der Zug zum Flug enthalten !!!
+                      </span>
+                    </div>
+                  </div>
                 </div>
 
               </div>
             </div>
 
-          </motion.div>
-        )}
-
-        {/* SCHRITT 2: RECHTLICHES & BESTÄTIGUNGEN (AGBS) */}
-        {currentStep === 2 && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
-            <div className="border-b border-brand-gray pb-2">
-              <h3 className="text-lg font-display font-bold text-brand-dark-brown">Wichtige Erklärungen & Bestätigungen</h3>
-              <p className="text-xs text-gray-500 font-sans mt-0.5">Bitte beantworten Sie die folgenden gesetzlich vorgeschriebenen Fragen zur Pauschalreise.</p>
-            </div>
-
+            {/* Wichtige Erklärungen & Bestätigungen */}
             <div className="space-y-6">
 
               {/* 1. AGBs vom Veranstalter */}
               <div className="bg-white p-4 rounded-xl border border-brand-gray space-y-3">
-                <label className="block text-xs font-display font-black text-brand-dark-brown uppercase tracking-wider">
-                  1. Wir haben die AGB´s vom Veranstalter zur Kenntnis genommen (siehe &quot;Wichtige Informationen&quot;) <span className="text-brand-orange">*</span>
-                </label>
+                <div className="block text-xs font-display font-black text-brand-dark-brown uppercase tracking-wider leading-relaxed">
+                  1. Wir haben die <a href="https://www.aldiana.com/dam/jcr:66256be8-71f3-49ba-847f-66a79a1ca06c/ALDIANA_AGBs_Sommer_2026.2026-01-13-11-07-21.pdf" target="_blank" rel="noopener noreferrer" className="text-brand-blue underline hover:text-brand-orange transition-colors">AGBs des Veranstalters</a> zur Kenntnis genommen <span className="text-brand-orange">*</span>
+                </div>
                 <div className="flex gap-4">
                   {['Ja', 'Nein'].map(opt => (
                     <button
@@ -1065,9 +1275,9 @@ export default function RegistrationForm({ onSubmit, onShowLegal, onShowAdmin }:
 
               {/* 2. Pauschalreiserichtlinien */}
               <div className="bg-white p-4 rounded-xl border border-brand-gray space-y-3">
-                <label className="block text-xs font-display font-black text-brand-dark-brown uppercase tracking-wider">
-                  2. Über die Pauschalreiserichtlinien sind wir informiert (siehe &quot;Wichtige Informationen&quot;) <span className="text-brand-orange">*</span>
-                </label>
+                <div className="block text-xs font-display font-black text-brand-dark-brown uppercase tracking-wider leading-relaxed">
+                  2. Über die <a href="https://www.aldiana.com/dam/jcr:d462857b-be29-4edb-b2f9-cb5efa884352/Pauschalreiserichtlinien-S2023.2025-04-25-10-13-30.pdf" target="_blank" rel="noopener noreferrer" className="text-brand-blue underline hover:text-brand-orange transition-colors">Pauschalreiserichtlinien</a> sind wir informiert <span className="text-brand-orange">*</span>
+                </div>
                 <div className="flex gap-4">
                   {['Ja', 'Nein'].map(opt => (
                     <button
@@ -1144,6 +1354,174 @@ export default function RegistrationForm({ onSubmit, onShowLegal, onShowAdmin }:
                 </div>
               </div>
 
+              {/* 5. Gewünschte Zahlungsart */}
+              <div className="bg-white p-4 rounded-xl border border-brand-gray space-y-3">
+                <label className="block text-xs font-display font-black text-brand-dark-brown uppercase tracking-wider">
+                  5. Bitte wählen Sie Ihre gewünschte Zahlungsart <span className="text-brand-orange">*</span>
+                </label>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  {[
+                    { key: 'Lastschrift', label: 'Lastschrift', desc: 'Bequemer Bankeinzug' },
+                    { key: 'Überweisung', label: 'Überweisung', desc: 'Zahlung per Banküberweisung' },
+                    { key: 'Kreditkarte', label: 'Kreditkarte', desc: 'Bei Kontingentbuchungen zzgl. 2% Disagio' }
+                  ].map(opt => {
+                    const isSelected = formData.zahlungsart === opt.key;
+                    return (
+                      <button
+                        key={opt.key}
+                        type="button"
+                        onClick={() => updateField('zahlungsart', opt.key as any)}
+                        className={`p-3.5 rounded-xl border text-left cursor-pointer transition-all flex flex-col justify-between h-full
+                          ${isSelected
+                            ? 'bg-brand-blue/5 border-brand-blue text-brand-blue ring-1 ring-brand-blue/30'
+                            : 'bg-white border-gray-300 text-gray-700 hover:border-brand-blue/50'
+                          }
+                        `}
+                      >
+                        <div className="flex items-center justify-between w-full mb-1">
+                          <span className="font-display font-extrabold text-xs uppercase tracking-wider">{opt.label}</span>
+                          <div className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0
+                            ${isSelected ? 'border-brand-blue bg-brand-blue' : 'border-gray-300'}
+                          `}>
+                            {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                          </div>
+                        </div>
+                        <span className="text-[10px] text-gray-400 font-sans leading-snug">{opt.desc}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+                {errors.zahlungsart && <p className="text-xs text-rose-600 font-semibold font-sans">{errors.zahlungsart}</p>}
+
+                {/* Dynamische Felder je nach gewählter Zahlungsart */}
+                <AnimatePresence mode="wait">
+                  {formData.zahlungsart === 'Lastschrift' && (
+                    <motion.div
+                      key="lastschrift-fields"
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="mt-3 p-4 bg-brand-light-bg/50 border border-brand-gray rounded-xl space-y-3 overflow-hidden"
+                    >
+                      <h4 className="text-xs font-display font-black text-brand-dark-brown uppercase tracking-wide">
+                        Angaben zum Lastschrifteinzug
+                      </h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider">
+                            Kontoinhaber <span className="text-brand-orange">*</span>
+                          </label>
+                          <input
+                            type="text"
+                            value={formData.zahlungKontoinhaber}
+                            onChange={(e) => {
+                              updateField('zahlungKontoinhaber', e.target.value);
+                              if (errors.zahlungKontoinhaber) {
+                                setErrors(prev => {
+                                  const c = { ...prev };
+                                  delete c.zahlungKontoinhaber;
+                                  return c;
+                                });
+                              }
+                            }}
+                            className="w-full bg-white px-3 py-2 text-xs border border-brand-gray rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-blue font-sans font-bold"
+                            placeholder="Z.B. Max Mustermann"
+                          />
+                          {errors.zahlungKontoinhaber && (
+                            <p className="text-[10px] text-rose-600 font-sans font-semibold">{errors.zahlungKontoinhaber}</p>
+                          )}
+                        </div>
+                        <div className="space-y-1">
+                          <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider">
+                            IBAN <span className="text-brand-orange">*</span>
+                          </label>
+                          <input
+                            type="text"
+                            value={formData.zahlungIban}
+                            onChange={(e) => {
+                              updateField('zahlungIban', e.target.value);
+                              if (errors.zahlungIban) {
+                                setErrors(prev => {
+                                  const c = { ...prev };
+                                  delete c.zahlungIban;
+                                  return c;
+                                });
+                              }
+                            }}
+                            className="w-full bg-white px-3 py-2 text-xs border border-brand-gray rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-blue font-sans font-mono font-bold uppercase"
+                            placeholder="DE00 0000 0000 0000 0000 00"
+                          />
+                          {errors.zahlungIban && (
+                            <p className="text-[10px] text-rose-600 font-sans font-semibold">{errors.zahlungIban}</p>
+                          )}
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {formData.zahlungsart === 'Kreditkarte' && (
+                    <motion.div
+                      key="kreditkarte-fields"
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="mt-3 p-4 bg-brand-light-bg/50 border border-brand-gray rounded-xl space-y-3 overflow-hidden"
+                    >
+                      <h4 className="text-xs font-display font-black text-brand-dark-brown uppercase tracking-wide">
+                        Angaben zur Kreditkarte
+                      </h4>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <div className="space-y-1">
+                          <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider">
+                            Karteninhaber (wie auf Karte)
+                          </label>
+                          <input
+                            type="text"
+                            value={formData.zahlungKreditkarteInhaber || ''}
+                            onChange={(e) => updateField('zahlungKreditkarteInhaber', e.target.value)}
+                            className="w-full bg-white px-3 py-2 text-xs border border-brand-gray rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-blue font-sans font-bold"
+                            placeholder="Z.B. MAX MUSTERMANN"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider">
+                            Kreditkartennummer
+                          </label>
+                          <input
+                            type="text"
+                            value={formData.zahlungKreditkarteNummer || ''}
+                            onChange={(e) => updateField('zahlungKreditkarteNummer', e.target.value)}
+                            className="w-full bg-white px-3 py-2 text-xs border border-brand-gray rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-blue font-sans font-mono font-bold"
+                            placeholder="4111 2222 3333 4444"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider">
+                            Gültig bis (MM/JJ)
+                          </label>
+                          <input
+                            type="text"
+                            value={formData.zahlungKreditkarteGueltig || ''}
+                            onChange={(e) => updateField('zahlungKreditkarteGueltig', e.target.value)}
+                            className="w-full bg-white px-3 py-2 text-xs border border-brand-gray rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-blue font-sans font-bold text-center"
+                            placeholder="MM/JJ"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Hinweis, Kreditkarte telefonisch durchzugeben */}
+                      <div className="bg-brand-blue/5 border border-brand-blue/20 p-3 rounded-lg text-xs text-brand-blue font-sans flex items-start gap-2 leading-relaxed">
+                        <span className="text-sm shrink-0">📞</span>
+                        <div>
+                          <strong>Alternativer Hinweis:</strong> Sie können uns Ihre Kreditkartendaten auch sehr gerne <strong>telefonisch durchgeben</strong>, falls Sie diese nicht online eintragen möchten! Weisen Sie uns einfach darauf hin.
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+
               {/* DSGVO Einwilligung */}
               <div className="p-4 bg-brand-light-bg/60 border border-brand-gray rounded-xl space-y-2">
                 <label className="inline-flex items-start gap-3 cursor-pointer">
@@ -1207,24 +1585,20 @@ export default function RegistrationForm({ onSubmit, onShowLegal, onShowAdmin }:
       </form>
 
       {/* Small Inline legal footer since main page footer is gone */}
-      {onShowLegal && (
-        <div className="bg-gray-50 border-t border-brand-gray/60 px-6 py-4 flex flex-col md:flex-row justify-between items-center gap-3 text-[10px] text-gray-400 font-sans">
-          <span>© {new Date().getFullYear()} Reisebüro Art Reisen GmbH, München. Alle Rechte vorbehalten.</span>
-          <div className="flex flex-wrap justify-center gap-3">
-            <button type="button" onClick={() => onShowLegal('impressum')} className="hover:underline font-bold text-gray-500 cursor-pointer">Impressum</button>
-            <span>•</span>
-            <button type="button" onClick={() => onShowLegal('datenschutz')} className="hover:underline font-bold text-gray-500 cursor-pointer">Datenschutz</button>
-            <span>•</span>
-            <button type="button" onClick={() => onShowLegal('agb')} className="hover:underline font-bold text-gray-500 cursor-pointer font-sans">Teilnahmebedingungen</button>
-            {onShowAdmin && (
-              <>
-                <span>•</span>
-                <button type="button" onClick={onShowAdmin} className="hover:underline text-gray-400 cursor-pointer text-[9px] font-mono">Admin</button>
-              </>
-            )}
-          </div>
+      <div className="bg-gray-50 border-t border-brand-gray/60 px-6 py-4 flex flex-col md:flex-row justify-between items-center gap-3 text-[10px] text-gray-400 font-sans">
+        <span>© {new Date().getFullYear()} Reisebüro art reisen GmbH, Mettmann. Alle Rechte vorbehalten.</span>
+        <div className="flex flex-wrap justify-center gap-3">
+          <a href="https://artreisen.de/impressum/" target="_blank" rel="noopener noreferrer" className="hover:underline font-bold text-gray-500">Impressum</a>
+          <span>•</span>
+          <a href="https://artreisen.de/datenschutz/" target="_blank" rel="noopener noreferrer" className="hover:underline font-bold text-gray-500">Datenschutz</a>
+          {onShowAdmin && (
+            <>
+              <span>•</span>
+              <button type="button" onClick={onShowAdmin} className="hover:underline text-gray-400 cursor-pointer text-[9px] font-mono">Admin</button>
+            </>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 }

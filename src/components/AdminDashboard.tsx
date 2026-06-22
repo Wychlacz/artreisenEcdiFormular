@@ -64,9 +64,9 @@ export default function AdminDashboard({
       'Geburtsdatum', 'Strasse', 'PLZ', 'Ort', 'Land', 'Mobiltelefon', 'E-Mail',
       'Personen Anzahl', 'Mitreisende Details',
       'Abflughafen', 'Abflughafen Anderer', 'Zimmertyp',
-      'AGB Kenntnis', 'Pauschalreise Richtlinie', 'Ruecktritt Info', 'Flexoption',
+      'AGB Kenntnis', 'Pauschalreise Richtlinie', 'Ruecktritt Info', 'Flexoption', 'Zahlungsart', 'Zahlungsdetails',
       'Verlaengerung Wunsch', 'Verlaengerung Zeitraum', 'Hinweise Beachten', 'Hinweise Text',
-      'Sitzplatz Wunsch', 'Sitzplatz Text', 'Privat-Transfer', 'Versicherung Angebot', 'Rail & Fly'
+      'Sitzplatz Wunsch', 'Sitzplatz Text', 'Privat-Transfer / Mietwagen', 'Versicherung Angebot', 'Rail & Fly'
     ];
 
     const rows = filteredRegs.map(reg => {
@@ -94,13 +94,19 @@ export default function AdminDashboard({
         reg.pauschalreiseRichtlinien,
         reg.versicherungInfoBenoetigt,
         reg.flexOption,
+        reg.zahlungsart || 'Keine Angabe',
+        reg.zahlungsart === 'Lastschrift' 
+          ? `IBAN: ${reg.zahlungIban || ''} | Inhaber: ${reg.zahlungKontoinhaber || ''}`
+          : reg.zahlungsart === 'Kreditkarte'
+            ? `Inhaber: ${reg.zahlungKreditkarteInhaber || ''} | Nummer: ${reg.zahlungKreditkarteNummer || ''} | Gueltig: ${reg.zahlungKreditkarteGueltig || ''}`
+            : '',
         reg.zusatzVerlaengerung ? 'Ja' : 'Nein',
         reg.zusatzVerlaengerungText || '',
         reg.zusatzBeachten ? 'Ja' : 'Nein',
         reg.zusatzBeachtenText || '',
         reg.zusatzSitzplatz ? 'Ja' : 'Nein',
         reg.zusatzSitzplatzText || '',
-        reg.zusatzPrivatTransfer ? 'Ja' : 'Nein',
+        reg.zusatzPrivatTransfer ? `Ja (${[reg.zusatzTransferAuswahlPrivat && 'Privattransfer', reg.zusatzTransferAuswahlMietwagen && 'Mietwagen'].filter(Boolean).join(' + ')})` : 'Nein',
         reg.zusatzVersicherungAngebot ? 'Ja' : 'Nein',
         reg.zusatzRailAndFly ? 'Ja' : 'Nein'
       ];
@@ -303,7 +309,12 @@ export default function AdminDashboard({
                         </div>
                       </td>
                       <td className="px-4 py-3.5 font-semibold text-brand-dark-text">
-                        <div>{reg.vorname} {reg.nachname}</div>
+                        <div>{reg.vorname} {reg.nachname} <span className="text-[9px] font-normal text-gray-400 font-sans">(Anmelder)</span></div>
+                        {reg.isHauptanmelderReisender === false && reg.abweichenderReisenderVorname && (
+                          <div className="text-[10px] text-brand-orange font-bold mt-0.5">
+                            Reisender Z1: {reg.abweichenderReisenderVorname} {reg.abweichenderReisenderNachname}
+                          </div>
+                        )}
                         <div className="text-[10px] text-gray-400 font-mono font-normal">{reg.email}</div>
                       </td>
                       <td className="px-4 py-3.5 text-center font-bold">
@@ -460,6 +471,54 @@ export default function AdminDashboard({
                   </div>
                 </div>
 
+                {/* Belegung Zimmer 1 */}
+                <div className="bg-brand-blue/5 p-3 rounded-lg border border-brand-blue/10 space-y-1">
+                  <h4 className="font-display font-medium text-brand-blue uppercase tracking-wider text-[10px] border-b border-brand-blue/10 pb-1">
+                    Belegung Zimmer 1
+                  </h4>
+                  {selectedReg.isHauptanmelderReisender === false ? (
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div>
+                        <span className="text-gray-400 block text-[9px] uppercase">Reisender Name</span>
+                        <p className="font-bold text-brand-orange">
+                          {selectedReg.abweichenderReisenderAnrede} {selectedReg.abweichenderReisenderVorname} {selectedReg.abweichenderReisenderNachname}
+                        </p>
+                      </div>
+                      <div>
+                        <span className="text-gray-400 block text-[9px] uppercase">Geburtsdatum</span>
+                        <p className="font-semibold">
+                          {selectedReg.abweichenderReisenderGeburtsdatum ? new Date(selectedReg.abweichenderReisenderGeburtsdatum).toLocaleDateString('de-DE') : '-'}
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-xs text-brand-dark-brown italic font-sans font-medium">Hauptanmelder reist selbst in Zimmer 1 mit.</p>
+                  )}
+                </div>
+
+                {/* Firmenrechnung Details */}
+                {selectedReg.isFirmenrechnung && (
+                  <div className="bg-brand-orange/5 p-3 rounded-lg border border-brand-orange/20 space-y-2">
+                    <h4 className="font-display font-bold text-brand-orange uppercase tracking-wider text-[10px] border-b border-brand-orange/20 pb-1">
+                      Firmenrechnung gewünscht
+                    </h4>
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div>
+                        <span className="text-gray-400 block">Firmenname</span>
+                        <p className="font-bold text-brand-dark-brown">{selectedReg.firmenName || 'N/A'}</p>
+                      </div>
+                      <div>
+                        <span className="text-gray-400 block">Ansprechpartner</span>
+                        <p className="font-semibold text-brand-dark-brown">{selectedReg.firmenAnsprechpartner || 'Gleich wie Hauptreisender'}</p>
+                      </div>
+                      <div className="col-span-2">
+                        <span className="text-gray-400 block">Firmenanschrift</span>
+                        <p className="font-semibold text-brand-dark-brown">{selectedReg.firmenAnschrift || 'N/A'}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {/* 2. Mitreisende */}
                 {selectedReg.mitreisende.length > 0 && (
                   <div>
@@ -552,9 +611,9 @@ export default function AdminDashboard({
                       </strong>
                     </div>
                     <div className="flex justify-between border-b border-brand-gray/50 pb-1">
-                      <span>Privat-Transfer (Airport Resort):</span>
+                      <span>Transfer / Mietwagen:</span>
                       <strong className={selectedReg.zusatzPrivatTransfer ? 'text-emerald-700' : 'text-gray-500'}>
-                        {selectedReg.zusatzPrivatTransfer ? 'Ja' : 'Nein'}
+                        {selectedReg.zusatzPrivatTransfer ? `Ja (${[selectedReg.zusatzTransferAuswahlPrivat && 'Privattransfer', selectedReg.zusatzTransferAuswahlMietwagen && 'Mietwagen'].filter(Boolean).join(' + ')})` : 'Nein'}
                       </strong>
                     </div>
                     <div className="flex justify-between border-b border-brand-gray/50 pb-1">
@@ -595,6 +654,25 @@ export default function AdminDashboard({
                       <strong className={selectedReg.flexOption === 'Ja' ? 'text-emerald-700' : 'text-gray-600'}>
                         {selectedReg.flexOption}
                       </strong>
+                    </div>
+                    <div>
+                      <span className="text-gray-500 block">Zahlungsart:</span>
+                      <strong className="text-brand-blue uppercase font-sans block">
+                        {selectedReg.zahlungsart || 'Keine Angabe'}
+                      </strong>
+                      {selectedReg.zahlungsart === 'Lastschrift' && (
+                        <div className="text-[10px] text-gray-600 bg-white p-1 rounded border border-brand-gray mt-1 font-mono">
+                          <div>Inh: {selectedReg.zahlungKontoinhaber || '–'}</div>
+                          <div>IBAN: {selectedReg.zahlungIban || '–'}</div>
+                        </div>
+                      )}
+                      {selectedReg.zahlungsart === 'Kreditkarte' && (
+                        <div className="text-[10px] text-gray-600 bg-white p-1 rounded border border-brand-gray mt-1">
+                          <div>Inh: {selectedReg.zahlungKreditkarteInhaber || '–'}</div>
+                          <div className="font-mono">CC: {selectedReg.zahlungKreditkarteNummer || '–'}</div>
+                          <div>Gültig: {selectedReg.zahlungKreditkarteGueltig || '–'}</div>
+                        </div>
+                      )}
                     </div>
                     <div className="col-span-2 pt-1 mt-1 border-t border-brand-gray/40 text-emerald-800 flex items-center gap-1 font-semibold">
                       <CheckCircle className="w-3.5 h-3.5 text-emerald-600" /> DSGVO-Zustimmung liegt vor.

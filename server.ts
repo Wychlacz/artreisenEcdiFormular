@@ -37,6 +37,12 @@ async function startServer() {
         abflughafen,
         abflughafenAnderer,
         flexOption,
+        zahlungsart,
+        zahlungIban,
+        zahlungKontoinhaber,
+        zahlungKreditkarteNummer,
+        zahlungKreditkarteGueltig,
+        zahlungKreditkarteInhaber,
         zusatzVerlaengerung,
         zusatzVerlaengerungText,
         zusatzBeachten,
@@ -44,6 +50,8 @@ async function startServer() {
         zusatzSitzplatz,
         zusatzSitzplatzText,
         zusatzPrivatTransfer,
+        zusatzTransferAuswahlPrivat,
+        zusatzTransferAuswahlMietwagen,
         zusatzVersicherungAngebot,
         zusatzRailAndFly,
         agbKenntnis,
@@ -51,6 +59,15 @@ async function startServer() {
         versicherungInfoBenoetigt,
         createdAt,
         zimmerIndex,
+        isFirmenrechnung,
+        firmenName,
+        firmenAnschrift,
+        firmenAnsprechpartner,
+        isHauptanmelderReisender,
+        abweichenderReisenderAnrede,
+        abweichenderReisenderVorname,
+        abweichenderReisenderNachname,
+        abweichenderReisenderGeburtsdatum,
       } = registration;
 
       const subject = `Neue Buchung ${id} - ${vorname} ${nachname} - ECDI Spring Camp`;
@@ -58,12 +75,13 @@ async function startServer() {
       let zimmerText = "";
       if (zimmer && zimmer.length > 0) {
         zimmerText = zimmer.map((z: any, idx: number) => {
+          const mainRoomOccupant = zimmerIndex === idx;
           const occupants = [
-            ...(zimmerIndex === idx ? [`${vorname} ${nachname} (Hauptreisende/r)`] : []),
+            ...(mainRoomOccupant ? [isHauptanmelderReisender === false ? `${abweichenderReisenderVorname} ${abweichenderReisenderNachname} (Reisegast)` : `${vorname} ${nachname} (Haupt)`] : []),
             ...(mitreisende ? mitreisende.filter((m: any) => m.zimmerIndex === idx).map((m: any) => `${m.vorname} ${m.nachname}`) : [])
           ];
           const occupantsString = occupants.length > 0 ? ` [Belegt durch: ${occupants.join(", ")}]` : " [Keine Personen zugewiesen]";
-          return `  * Zimmer ${idx + 1}: ${z.zimmertyp} für ${z.gaesteAnzahl} Person(en)${zimmer.length > 1 ? occupantsString : ""}`;
+          return `  * Zimmer ${idx + 1}: ${z.zimmertyp} für ${z.gaesteAnzahl} Person(en)${occupantsString}`;
         }).join("\n");
       } else {
         zimmerText = `  * ${registration.zimmertyp || "Keine Zimmerauswahl"}`;
@@ -87,16 +105,29 @@ BUCHUNGSBESTÄTIGUNG / NEUE REGISTRIERUNG
 Buchungs-ID:      ${id}
 Eingangsdatum:    ${new Date(createdAt).toLocaleString("de-DE")}
 
-KONTAKTDATEN DES HAUPTREISENDEN:
+KONTAKTDATEN DES ANMELDERS (BUCHUNGSPERSON):
 -------------------------------------------------------------------------
 Anrede:           ${anrede || "-"}
 Titel:            ${titel || "-"}
 Name:             ${vorname} ${nachname}
+E-Mail:           ${email}
 Straße:           ${strasse || "-"}
 PLZ / Ort:        ${plzOrt || "-"}
 Land:             ${land || "-"}
 Telefon:          ${telefon || "-"}
-E-Mail:           ${email}
+
+TATSÄCHLICHER REISEGAST FÜR ZIMMER 1:
+-------------------------------------------------------------------------
+Hauptanmelder reist selbst? ${isHauptanmelderReisender === false ? "Nein (Abweichender Reisegast für Zimmer 1 wie folgt)" : "Ja"}
+${isHauptanmelderReisender === false ? `Name:             ${abweichenderReisenderAnrede || ""} ${abweichenderReisenderVorname || ""} ${abweichenderReisenderNachname || ""}
+Geburtsdatum:     ${abweichenderReisenderGeburtsdatum || "-"}` : ""}
+
+FIRMENRECHNUNG (Optional):
+-------------------------------------------------------------------------
+Firmenrechnung?   ${isFirmenrechnung ? "Ja" : "Nein"}
+${isFirmenrechnung ? `Firmenname:       ${firmenName || "-"}
+Firmenanschrift:  ${firmenAnschrift || "-"}
+Ansprechpartner:  ${firmenAnsprechpartner || "Identisch mit Hauptreisendem"}` : ""}
 
 REISETERMDETAILS & FLUG:
 -------------------------------------------------------------------------
@@ -119,9 +150,14 @@ ZUSATZLEISTUNGEN & VERLÄNGERUNGEN:
 - Verlängerungswunsch:               ${zusatzVerlaengerung ? `Ja (${zusatzVerlaengerungText})` : "Nein"}
 - Dinge zu beachten (Wünsche etc):   ${zusatzBeachten ? `Ja (${zusatzBeachtenText})` : "Nein"}
 - Sitzplatzwunsch:                   ${zusatzSitzplatz ? `Ja (${zusatzSitzplatzText})` : "Nein"}
-- Privat-Transfer:                   ${zusatzPrivatTransfer ? "Ja, gewünscht" : "Nein"}
+- Privat-Transfer / Mietwagen:        ${zusatzPrivatTransfer ? `Ja (${[zusatzTransferAuswahlPrivat && 'Privattransfer', zusatzTransferAuswahlMietwagen && 'Mietwagen'].filter(Boolean).join(' + ')})` : "Nein"}
 - Reiserücktritts-Versicherungsangebot: ${zusatzVersicherungAngebot ? "Ja, gewünscht" : "Nein"}
 - Rail & Fly (Zug-zum-Flug):         ${zusatzRailAndFly ? "Ja, gewünscht" : "Nein"}
+
+ZAHLUNGSINFORMATIONEN:
+-------------------------------------------------------------------------
+- Gewählte Zahlungsart:               ${zahlungsart || "Keine Angabe"}
+${zahlungsart === "Lastschrift" ? `- Kontoinhaber:                      ${zahlungKontoinhaber || '-'}\n- IBAN:                             ${zahlungIban || '-'}` : ""}${zahlungsart === "Kreditkarte" ? `- Karteninhaber:                    ${zahlungKreditkarteInhaber || '-'}\n- Kreditkartennummer:               ${zahlungKreditkarteNummer ? 'xxxxxxxxxxxx' + zahlungKreditkarteNummer.slice(-4) : '(Wird telefonisch durchgegeben)'}\n- Gültig bis:                       ${zahlungKreditkarteGueltig || '-'}` : ""}
 
 GESETZLICHE BESTÄTIGUNGEN:
 -------------------------------------------------------------------------

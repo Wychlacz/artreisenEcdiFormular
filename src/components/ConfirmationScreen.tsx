@@ -37,8 +37,16 @@ Adresse:          ${registration.strasseHausnummer}
 Telefon (Mobil):  ${registration.telefonMobil}
 E-Mail:           ${registration.email}
 
+${registration.isFirmenrechnung ? `FIRMENRECHNUNG (Gewünscht):
+-----------------------------------------
+Firma:                ${registration.firmenName}
+Anschrift:            ${registration.firmenAnschrift}
+Ansprechpartner:      ${registration.firmenAnsprechpartner || 'Gleich wie Hauptreisender'}
+` : ''}
+
 REISENDE INSGESAMT: ${registration.personenAnzahl} Person(en)
-Hauptreisender:      ${registration.anrede} ${registration.vorname} ${registration.nachname} (Geb.: ${registration.geburtsdatum})${registration.zimmer && registration.zimmer.length > 1 ? ` [Zugeordnetes Zimmer: Zimmer ${registration.zimmerIndex !== undefined ? registration.zimmerIndex + 1 : 1}]` : ''}
+Hauptanmelder (Buchungsperson): ${registration.anrede} ${registration.vorname} ${registration.nachname} (Geb.: ${registration.geburtsdatum})
+Reisegast Zimmer 1:  ${registration.isHauptanmelderReisender === false ? `${registration.abweichenderReisenderAnrede} ${registration.abweichenderReisenderVorname} ${registration.abweichenderReisenderNachname} (Geb.: ${registration.abweichenderReisenderGeburtsdatum})` : 'Hauptanmelder reist selbst.'}${registration.zimmer && registration.zimmer.length > 1 ? ` [Zugeordnetes Zimmer: Zimmer ${registration.zimmerIndex !== undefined ? registration.zimmerIndex + 1 : 1}]` : ''}
 ${registration.mitreisende.length > 0 ? `
 MITREISENDE PERSONEN:
 -----------------------------------------
@@ -48,31 +56,31 @@ REISE- & UNTERBRINGUNGSDETAILS:
 -----------------------------------------
 Abflughafen:      ${registration.abflughafen === 'andere Flughäfen' ? registration.abflughafenAnderer : registration.abflughafen}
 ${registration.zimmer && registration.zimmer.length > 0 ? `Zimmer-Aufteilung:
-${registration.zimmer.map((z, idx) => `  * Zimmer ${idx+1}: ${z.zimmertyp} (${z.gaesteAnzahl} Person(en))` + (registration.zimmer && registration.zimmer.length > 1 ? ` - Belegt durch: ${[
-  ...(registration.zimmerIndex === idx ? [`${registration.vorname} ${registration.nachname}`] : []),
+${registration.zimmer.map((z, idx) => `  * Zimmer ${idx+1}: ${z.zimmertyp} (${z.gaesteAnzahl} Person(en))` + ` - Belegt durch: ${[
+  ...(registration.zimmerIndex === idx ? [registration.isHauptanmelderReisender === false ? `${registration.abweichenderReisenderVorname} ${registration.abweichenderReisenderNachname}` : `${registration.vorname} ${registration.nachname}`] : []),
   ...registration.mitreisende.filter(m => m.zimmerIndex === idx).map(m => `${m.vorname} ${m.nachname}`)
-].join(', ') || 'Keine Angabe'}` : '')).join('\n')}` : `Zimmertyp:        ${registration.zimmertyp}`}
+].join(', ') || 'Keine Angabe'}`).join('\n')}` : `Zimmertyp:        ${registration.zimmertyp}`}
 
 ZUSATZLEISTUNGEN & SONDERWÜNSCHE:
 -----------------------------------------
 Urlaub verlängern: ${registration.zusatzVerlaengerung ? `Ja (${registration.zusatzVerlaengerungText})` : 'Nein'}
 Dinge beachten:    ${registration.zusatzBeachten ? `Ja (${registration.zusatzBeachtenText})` : 'Nein'}
 Besserer Sitzplatz:${registration.zusatzSitzplatz ? `Ja (${registration.zusatzSitzplatzText})` : 'Nein'}
-Privat-Transfer:   ${registration.zusatzPrivatTransfer ? 'Ja' : 'Nein'}
+Privat-Transfer / Mietwagen: ${registration.zusatzPrivatTransfer ? `Ja (${[registration.zusatzTransferAuswahlPrivat && 'Privattransfer', registration.zusatzTransferAuswahlMietwagen && 'Mietwagen'].filter(Boolean).join(' + ')})` : 'Nein'}
 Versicherungsangebot requested: ${registration.zusatzVersicherungAngebot ? 'Ja' : 'Nein'}
-Rail & Fly:        ${registration.zusatzRailAndFly ? 'Ja' : 'Nein'}
 
 WICHTIGE ERKLÄRUNGEN:
 -----------------------------------------
 AGB zur Kenntnis genommen:               ${registration.agbKenntnis}
 Pauschalreiserichtlinien informiert:    ${registration.pauschalreiseRichtlinien}
-Rücktrittskostenversicherung Info benö-
-tigt:                                    ${registration.versicherungInfoBenoetigt}
+Rücktrittskostenversicherung Info benötigt:                                    ${registration.versicherungInfoBenoetigt}
 Flexoption abschließen (59,- €):         ${registration.flexOption}
+Gewählte Zahlungsart:                    ${registration.zahlungsart || 'Keine Angabe'}
+${registration.zahlungsart === 'Lastschrift' ? `* IBAN: ${registration.zahlungIban || 'Keine Angabe'}\n* Kontoinhaber: ${registration.zahlungKontoinhaber || 'Keine Angabe'}` : ''}${registration.zahlungsart === 'Kreditkarte' ? `* Karteninhaber: ${registration.zahlungKreditkarteInhaber || 'Keine Angabe'}\n* Kartennummer: ${registration.zahlungKreditkarteNummer ? 'xxxxxxxxxxxx' + registration.zahlungKreditkarteNummer.slice(-4) : '(Wird telefonisch durchgegeben)'}` : ''}
 DSGVO-Einverständnis erteilt:           Ja
 
 Vielen Dank für Ihr Vertrauen in über 30 Jahre Erfahrung!
-Reisebüro Art Reisen
+Reisebüro art reisen GmbH
     `;
 
     const blob = new Blob([textData], { type: 'text/plain;charset=utf-8' });
@@ -99,25 +107,25 @@ Hier ist eine Übersicht Ihrer Reiseanmeldung:
 - Gebuchte Zimmer:
 ${registration.zimmer && registration.zimmer.length > 0 ? registration.zimmer.map((z, idx) => `  * Zimmer ${idx+1}: ${z.zimmertyp} (${z.gaesteAnzahl} Person(en))`).join('\n') : `  * ${registration.zimmertyp}`}
 - Flexoption (59 Euro): ${registration.flexOption}
-- Gewünschte Zusatzleistungen:
+- Gewählte Zahlungsart: ${registration.zahlungsart || 'Keine Angabe'}
+${registration.zahlungsart === 'Lastschrift' ? `  * IBAN: ${registration.zahlungIban || 'Keine Angabe'}\n  * Kontoinhaber: ${registration.zahlungKontoinhaber || 'Keine Angabe'}\n` : ''}${registration.zahlungsart === 'Kreditkarte' ? `  * Karteninhaber: ${registration.zahlungKreditkarteInhaber || 'Keine Angabe'}\n  * Kartennummer: ${registration.zahlungKreditkarteNummer ? 'xxxxxxxxxxxx' + registration.zahlungKreditkarteNummer.slice(-4) : '(Wird telefonisch durchgegeben)'}\n` : ''}- Gewünschte Zusatzleistungen:
   ${registration.zusatzVerlaengerung ? `* Verlängerungswunsch: ${registration.zusatzVerlaengerungText}` : ''}
   ${registration.zusatzBeachten ? `* Wichtige Hinweise: ${registration.zusatzBeachtenText}` : ''}
   ${registration.zusatzSitzplatz ? `* Sitzplatz: ${registration.zusatzSitzplatzText}` : ''}
-  ${registration.zusatzPrivatTransfer ? `* Privat-Transfer erwünscht` : ''}
+  ${registration.zusatzPrivatTransfer ? `* Privat-Transfer / Mietwagen: ${[registration.zusatzTransferAuswahlPrivat && 'Privattransfer', registration.zusatzTransferAuswahlMietwagen && 'Mietwagen'].filter(Boolean).join(' + ')}` : ''}
   ${registration.zusatzVersicherungAngebot ? `* Allianz Rücktrittsversicherungsangebot erwünscht` : ''}
-  ${registration.zusatzRailAndFly ? `* Rail & Fly (Zug-zum-Flug) Angebot erwünscht` : ''}
 -------------------------------------------------------------------------
 
 Nächste Schritte:
 1. Unser Team prüft unverzüglich die Flug- und Hotelkontingente entsprechend Ihrer Wünsche.
 2. In Kürze erhalten Sie Ihre verbindliche Buchungsbestätigung mit der gesetzlichen Insolvenzsicherung (Sicherungsschein) sowie der Rechnung direkt per E-Mail zugestellt.
-3. Ggf. senden wir Ihnen die optionalen Angebote für Ihre gewünschten Zusatzleistungen (Sitzplätze, Rail & Fly etc.) zu.
+3. Ggf. senden wir Ihnen die optionalen Angebote für Ihre gewünschten Zusatzleistungen (Sitzplätze, Privattransfer/Mietwagen etc.) zu.
 
 Bei Rückfragen stehen wir Ihnen jederzeit unter +49 (0) 89 123456-0 oder unter info@art-reisen.de zur Verfügung.
 
-Herzliche Grüße aus München,
+Herzliche Grüße aus Mettmann,
 
-Sabine Artmann & das Team von Art Reisen
+Sabine Artmann & das Team von art reisen
 Inhabergeführt seit über 30 Jahren.
   `;
 
@@ -163,14 +171,32 @@ Inhabergeführt seit über 30 Jahren.
           <div className="space-y-4 md:col-span-2 border-r-0 md:border-r border-brand-gray border-dashed pr-0 md:pr-6 font-sans">
             <div className="grid grid-cols-2 gap-4 text-xs">
               <div>
-                <span className="text-gray-400 block font-medium">Anmelder / Hauptreisender</span>
+                <span className="text-gray-400 block font-medium">Anmelder (Ansprechpartner)</span>
                 <span className="font-display font-extrabold text-sm text-brand-dark-brown">
                   {registration.anrede} {registration.vorname} {registration.nachname}
                 </span>
                 <span className="block text-gray-400 text-[10px]">{registration.email}</span>
+              </div>
+
+              <div>
+                <span className="text-gray-400 block font-medium">Reisegast Zimmer 1</span>
+                {registration.isHauptanmelderReisender === false ? (
+                  <div className="flex flex-col">
+                    <span className="font-display font-extrabold text-sm text-brand-orange leading-tight">
+                      {registration.abweichenderReisenderAnrede} {registration.abweichenderReisenderVorname} {registration.abweichenderReisenderNachname}
+                    </span>
+                    <span className="text-gray-400 text-[10px] italic">
+                      Geb.: {registration.abweichenderReisenderGeburtsdatum ? new Date(registration.abweichenderReisenderGeburtsdatum).toLocaleDateString('de-DE') : '-'}
+                    </span>
+                  </div>
+                ) : (
+                  <span className="font-sans font-semibold text-xs text-brand-dark-brown italic">
+                    Hauptanmelder selbst
+                  </span>
+                )}
                 {registration.zimmer && registration.zimmer.length > 1 && (
-                  <span className="block text-brand-orange text-[10px] font-bold mt-0.5">
-                    Zugewiesen: Zimmer {registration.zimmerIndex !== undefined ? registration.zimmerIndex + 1 : 1}
+                  <span className="block text-brand-orange text-[9px] font-bold mt-1">
+                    Zimmer-Zuordnung: Zimmer {registration.zimmerIndex !== undefined ? registration.zimmerIndex + 1 : 1}
                   </span>
                 )}
               </div>
@@ -193,19 +219,36 @@ Inhabergeführt seit über 30 Jahren.
               </div>
 
               <div>
-                <span className="text-gray-400 block font-medium">Abflughafen</span>
-                <span className="font-display font-semibold text-xs text-brand-blue">
+                <span className="text-gray-400 block font-medium">Abflughafen & Reisegäste</span>
+                <span className="font-display font-semibold text-xs text-brand-blue block">
                   {registration.abflughafen === 'andere Flughäfen' ? registration.abflughafenAnderer : registration.abflughafen}
                 </span>
-              </div>
-
-              <div>
-                <span className="text-gray-400 block font-medium">Gesamtpersonen</span>
-                <span className="font-display font-semibold text-xs text-brand-dark-brown">
-                  {registration.personenAnzahl} Person(en)
+                <span className="font-display font-semibold text-[10px] text-brand-dark-brown block mt-0.5">
+                  {registration.personenAnzahl} Person(en) gesamt
                 </span>
               </div>
             </div>
+
+            {/* Firmenrechnung Details */}
+            {registration.isFirmenrechnung && (
+              <div className="bg-brand-orange/5 p-3.5 rounded-xl border border-brand-orange/20 space-y-2 text-xs">
+                <span className="text-[10px] font-bold text-brand-orange block uppercase tracking-wider">Firmenrechnung gewünscht:</span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-gray-700">
+                  <div>
+                    <span className="text-gray-400 block text-[9px] uppercase">Firmenname</span>
+                    <strong className="text-brand-dark-brown">{registration.firmenName}</strong>
+                  </div>
+                  <div>
+                    <span className="text-gray-400 block text-[9px] uppercase">Ansprechpartner (falls abweichend)</span>
+                    <strong className="text-brand-dark-brown">{registration.firmenAnsprechpartner || 'Identisch mit Hauptreisendem'}</strong>
+                  </div>
+                  <div className="sm:col-span-2 col-span-1">
+                    <span className="text-gray-400 block text-[9px] uppercase">Rechnungsanschrift</span>
+                    <strong className="text-brand-dark-brown">{registration.firmenAnschrift}</strong>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Companions listing */}
             {registration.mitreisende.length > 0 && (
@@ -247,7 +290,11 @@ Inhabergeführt seit über 30 Jahren.
                 </li>
                 <li className="flex items-center gap-1.5">
                   <span className={registration.zusatzPrivatTransfer ? 'text-emerald-600' : 'text-gray-300'}>✓</span>
-                  Privat-Transfer: {registration.zusatzPrivatTransfer ? 'Ja' : 'Nein'}
+                  Privattransfer/Mietwagen: {registration.zusatzPrivatTransfer ? (
+                    <span className="font-semibold text-emerald-700">
+                      {[registration.zusatzTransferAuswahlPrivat && 'Privattransfer', registration.zusatzTransferAuswahlMietwagen && 'Mietwagen'].filter(Boolean).join(' + ')}
+                    </span>
+                  ) : 'Nein'}
                 </li>
                 <li className="flex items-center gap-1.5 col-span-2 mt-1 pt-1 border-t border-brand-gray/50">
                   🛡️ Flexoption gebucht für 59,- €: <strong className={registration.flexOption === 'Ja' ? 'text-emerald-600 ml-1' : 'text-gray-500 ml-1'}>{registration.flexOption}</strong>
@@ -270,6 +317,23 @@ Inhabergeführt seit über 30 Jahren.
                 <p className="flex items-center gap-1 text-emerald-700 font-semibold">
                   <Check className="w-3.5 h-3.5 shrink-0 bg-emerald-100 rounded-full p-0.5" /> DSGVO zugestimmt
                 </p>
+                <div className="mt-2.5 pt-2 border-t border-brand-gray/50 font-sans text-[10px] text-brand-dark-brown space-y-1">
+                  <span className="text-gray-400 block font-medium">Gewählte Zahlungsart:</span>
+                  <span className="font-bold uppercase tracking-wider text-brand-blue block">{registration.zahlungsart || 'Keine Angabe'}</span>
+                  {registration.zahlungsart === 'Lastschrift' && (
+                    <div className="bg-gray-50 p-1.5 rounded border border-brand-gray text-[9px] text-gray-600 font-mono space-y-0.5 mt-1">
+                      <div>Inhaber: {registration.zahlungKontoinhaber || '–'}</div>
+                      <div className="truncate">IBAN: {registration.zahlungIban || '–'}</div>
+                    </div>
+                  )}
+                  {registration.zahlungsart === 'Kreditkarte' && (
+                    <div className="bg-gray-50 p-1.5 rounded border border-brand-gray text-[9px] text-gray-600 space-y-0.5 mt-1">
+                      <div>Inhaber: {registration.zahlungKreditkarteInhaber || '–'}</div>
+                      <div className="font-mono">Nummer: {registration.zahlungKreditkarteNummer ? '•••• •••• •••• ' + registration.zahlungKreditkarteNummer.slice(-4) : '(Telefonisch)'}</div>
+                      <div>Gültig: {registration.zahlungKreditkarteGueltig || '–'}</div>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 

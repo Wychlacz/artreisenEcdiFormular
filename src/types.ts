@@ -27,6 +27,19 @@ export interface Registration {
   telefonMobil: string;
   email: string;
   zimmerIndex?: number;
+
+  // Firmenrechnung Option
+  isFirmenrechnung?: boolean;
+  firmenName?: string;
+  firmenAnschrift?: string;
+  firmenAnsprechpartner?: string;
+
+  // Abweichender Reisende für Zimmer 1 (falls Anmelder nicht selbst reist)
+  isHauptanmelderReisender?: boolean;
+  abweichenderReisenderAnrede?: string;
+  abweichenderReisenderVorname?: string;
+  abweichenderReisenderNachname?: string;
+  abweichenderReisenderGeburtsdatum?: string;
   
   // Anzahl Personen & Mitreisende
   personenAnzahl: number;
@@ -47,6 +60,12 @@ export interface Registration {
   pauschalreiseRichtlinien: 'Ja' | 'Nein' | '';
   versicherungInfoBenoetigt: 'Ja' | 'Nein' | '';
   flexOption: 'Ja' | 'Nein' | '';
+  zahlungsart: 'Lastschrift' | 'Überweisung' | 'Kreditkarte' | '';
+  zahlungIban?: string;
+  zahlungKontoinhaber?: string;
+  zahlungKreditkarteNummer?: string;
+  zahlungKreditkarteGueltig?: string;
+  zahlungKreditkarteInhaber?: string;
   dsgvoEinverstaendnis: boolean;
   
   // Zusatzleistungen (Absenden und Zusatzleistungen)
@@ -57,6 +76,8 @@ export interface Registration {
   zusatzSitzplatz: boolean;
   zusatzSitzplatzText: string;
   zusatzPrivatTransfer: boolean;
+  zusatzTransferAuswahlPrivat?: boolean;
+  zusatzTransferAuswahlMietwagen?: boolean;
   zusatzVersicherungAngebot: boolean;
   zusatzRailAndFly: boolean;
 }
