@@ -171,6 +171,10 @@ GESETZLICHE BESTÄTIGUNGEN:
       const smtpUser = process.env.SMTP_USER;
       const smtpPass = process.env.SMTP_PASS;
       const smtpFrom = process.env.SMTP_FROM || "booking@artreisen.de";
+      const makeWebhookUrl = process.env.MAKE_WEBHOOK_URL;
+
+      let sentViaSmtp = false;
+      let sentViaWebhook = false;
 
       if (smtpHost && smtpUser && smtpPass) {
         const transporter = nodemailer.createTransport({
@@ -192,14 +196,64 @@ GESETZLICHE BESTÄTIGUNGEN:
         });
 
         console.log(`Email successfully sent for booking ${id} to info@artreisen.de`);
-      } else {
-        console.warn("SMTP configuration is missing. Email content logged below:");
+        sentViaSmtp = true;
+      }
+
+      // Check and dispatch to Make.com Webhook if defined
+      if (makeWebhookUrl) {
+        try {
+          console.log(`Forwarding booking ${id} to Make.com Webhook...`);
+          const makeResponse = await fetch(makeWebhookUrl, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              bookingId: id,
+              subject,
+              textContent,
+              recipient: "info@artreisen.de",
+              customerEmail: email,
+              anmelder: {
+                anrede,
+                titel,
+                vorname,
+                nachname,
+                email,
+                strasse,
+                plzOrt,
+                land,
+                telefon,
+              },
+              buchungsdetails: registration,
+            }),
+          });
+
+          if (makeResponse.ok) {
+            console.log(`Successfully dispatched payload to Make.com Webhook for booking ${id}`);
+            sentViaWebhook = true;
+          } else {
+            console.error(`Received error status from Make.com Webhook: ${makeResponse.status}`);
+          }
+        } catch (webhookErr: any) {
+          console.error("Failed to forward payload to Make.com Webhook:", webhookErr);
+        }
+      }
+
+      if (!sentViaSmtp && !sentViaWebhook) {
+        console.warn("SMTP configuration and MAKE_WEBHOOK_URL are both missing. Email content logged below:");
         console.log("-----------------------------------------");
         console.log(`TO: info@artreisen.de\nCC: ${email}\nSUBJECT: ${subject}\n\n${textContent}`);
         console.log("-----------------------------------------");
       }
 
-      res.json({ success: true });
+      res.json({ 
+        success: true, 
+        methods: { 
+          smtp: sentViaSmtp, 
+          webhook: sentViaWebhook 
+        } 
+      });
     } catch (err: any) {
       console.error("Error sending email:", err);
       res.status(500).json({ success: false, error: err.message });
