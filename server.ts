@@ -171,7 +171,7 @@ GESETZLICHE BESTÄTIGUNGEN:
       const smtpUser = process.env.SMTP_USER;
       const smtpPass = process.env.SMTP_PASS;
       const smtpFrom = process.env.SMTP_FROM || "booking@artreisen.de";
-      const makeWebhookUrl = process.env.MAKE_WEBHOOK_URL || "https://hook.eu2.make.com/y4qn1oizkaooxuei0kcytgk4u5tfl535";
+      const makeWebhookUrl = process.env.MAKE_WEBHOOK_URL || "https://hook.eu2.make.com/kvu2sw7es80uu5i4e61s62hzajkqgo0p";
 
       let sentViaSmtp = false;
       let sentViaWebhook = false;

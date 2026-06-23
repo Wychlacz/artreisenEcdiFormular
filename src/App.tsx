@@ -90,7 +90,7 @@ export default function App() {
     // Für statische Webhoster (wie Netlify), die keinen Express-Backend-Server ausführen:
     // Falls du die URL direkt in den Code eintragen möchtest (da Netlify eine rein statische Seite hostet),
     // kannst du sie in die folgende Zeile eintragen ("https://hook.us2.make.com/..."):
-    const HARDCODED_MAKE_WEBHOOK_URL = "https://hook.eu2.make.com/y4qn1oizkaooxuei0kcytgk4u5tfl535"; 
+    const HARDCODED_MAKE_WEBHOOK_URL = "https://hook.eu2.make.com/kvu2sw7es80uu5i4e61s62hzajkqgo0p"; 
 
     const viteMakeWebhookUrl = (import.meta as any).env?.VITE_MAKE_WEBHOOK_URL || HARDCODED_MAKE_WEBHOOK_URL;
     if (viteMakeWebhookUrl) {
