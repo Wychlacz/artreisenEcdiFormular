@@ -86,6 +86,48 @@ export default function App() {
       .catch(err => {
         console.error('Netzwerkfehler beim automatischen Buchungsemailversand:', err);
       });
+
+    // Für statische Webhoster (wie Netlify), die keinen Express-Backend-Server ausführen:
+    // Falls VITE_MAKE_WEBHOOK_URL als Umgebungsvariable im Frontend definiert ist,
+    // senden wir die Buchungsdaten zusätzlich direkt aus dem Browser an Make.com!
+    const viteMakeWebhookUrl = (import.meta as any).env?.VITE_MAKE_WEBHOOK_URL;
+    if (viteMakeWebhookUrl) {
+      console.log('Übermittle Buchungsdaten direkt ans Make.com-Webhook (Frontend)...');
+      fetch(viteMakeWebhookUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          bookingId: newRegistration.id,
+          subject: `Neue Buchung ${newRegistration.id} - ${newRegistration.vorname} ${newRegistration.nachname} - ECDI Spring Camp`,
+          recipient: "info@artreisen.de",
+          customerEmail: newRegistration.email,
+          anmelder: {
+            anrede: newRegistration.anrede,
+            vorname: newRegistration.vorname,
+            nachname: newRegistration.nachname,
+            email: newRegistration.email,
+            strasse: newRegistration.strasseHausnummer,
+            plz: newRegistration.plz,
+            ort: newRegistration.ort,
+            land: newRegistration.land,
+            telefon: newRegistration.telefonMobil,
+          },
+          buchungsdetails: newRegistration,
+        }),
+      })
+        .then(res => {
+          if (res.ok) {
+            console.log('Erfolgreich direkt an das Make.com-Webhook übermittelt!');
+          } else {
+            console.error('Make.com-Webhook lieferte Fehler-Status:', res.status);
+          }
+        })
+        .catch(err => {
+          console.error('Fehler beim direkten Senden an das Make.com-Webhook:', err);
+        });
+    }
   };
 
   // Status-Änderung in der Admin-Konsole
