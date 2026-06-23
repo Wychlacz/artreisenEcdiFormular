@@ -88,9 +88,11 @@ export default function App() {
       });
 
     // Für statische Webhoster (wie Netlify), die keinen Express-Backend-Server ausführen:
-    // Falls VITE_MAKE_WEBHOOK_URL als Umgebungsvariable im Frontend definiert ist,
-    // senden wir die Buchungsdaten zusätzlich direkt aus dem Browser an Make.com!
-    const viteMakeWebhookUrl = (import.meta as any).env?.VITE_MAKE_WEBHOOK_URL;
+    // Falls du die URL direkt in den Code eintragen möchtest (da Netlify eine rein statische Seite hostet),
+    // kannst du sie in die folgende Zeile eintragen ("https://hook.us2.make.com/..."):
+    const HARDCODED_MAKE_WEBHOOK_URL = "https://hook.eu2.make.com/y4qn1oizkaooxuei0kcytgk4u5tfl535"; 
+
+    const viteMakeWebhookUrl = (import.meta as any).env?.VITE_MAKE_WEBHOOK_URL || HARDCODED_MAKE_WEBHOOK_URL;
     if (viteMakeWebhookUrl) {
       console.log('Übermittle Buchungsdaten direkt ans Make.com-Webhook (Frontend)...');
       fetch(viteMakeWebhookUrl, {
