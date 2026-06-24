@@ -211,6 +211,73 @@ GESETZLICHE BESTÄTIGUNGEN:
       if (makeWebhookUrl) {
         try {
           console.log(`Forwarding booking ${id} to Make.com Webhook...`);
+          
+          // Transform registration details so companions are embedded in the room objects
+          const {
+            zimmer: zimmerArray = [],
+            mitreisende: mitreisendeArray = [],
+            ...restOfRegistration
+          } = registration;
+
+          const transformedZimmer = zimmerArray.map((z: any, idx: number) => {
+            const zimmerNummer = idx + 1;
+            const teilnehmer: any[] = [];
+
+            // Rule 1: The main traveler belongs automatically to Room 1 (zimmerNummer: 1)
+            if (zimmerNummer === 1) {
+              if (registration.isHauptanmelderReisender !== false) {
+                teilnehmer.push({
+                  vorname: registration.vorname || "",
+                  nachname: registration.nachname || "",
+                  geburtsdatum: registration.geburtsdatum || "",
+                  isHauptanmelder: true
+                });
+              } else {
+                teilnehmer.push({
+                  vorname: registration.abweichenderReisenderVorname || "",
+                  nachname: registration.abweichenderReisenderNachname || "",
+                  geburtsdatum: registration.abweichenderReisenderGeburtsdatum || "",
+                  isHauptanmelder: false
+                });
+              }
+            }
+
+            // Rule 2: All mitreisende with zimmerIndex matching this room are assigned
+            const roomCompanions = mitreisendeArray.filter((m: any) => {
+              const compRoomIdx = m.zimmerIndex !== undefined ? Number(m.zimmerIndex) : 0;
+              return compRoomIdx === idx;
+            });
+
+            roomCompanions.forEach((m: any) => {
+              teilnehmer.push({
+                vorname: m.vorname || "",
+                nachname: m.nachname || "",
+                geburtsdatum: m.geburtsdatum || "",
+                isHauptanmelder: false
+              });
+            });
+
+            // Rule 4: Keep key fields on the room level
+            return {
+              zimmerNummer,
+              zimmertyp: z.zimmertyp || registration.zimmertyp || "",
+              abflughafen: registration.abflughafen === 'andere Flughäfen' ? (registration.abflughafenAnderer || registration.abflughafen) : (registration.abflughafen || ""),
+              zahlungsart: registration.zahlungsart || "",
+              flexOption: registration.flexOption || "",
+              versicherungInfoBenoetigt: registration.versicherungInfoBenoetigt || "",
+              teilnehmer
+            };
+          });
+
+          const cleanRegistration = {
+            ...restOfRegistration,
+            zimmer: transformedZimmer
+          };
+
+          // Remove mitreisende and mitreisendeArray properties as requested
+          delete (cleanRegistration as any).mitreisende;
+          delete (cleanRegistration as any).mitreisendeArray;
+
           const makeResponse = await fetch(makeWebhookUrl, {
             method: "POST",
             headers: {
@@ -233,7 +300,7 @@ GESETZLICHE BESTÄTIGUNGEN:
                 land,
                 telefon: resolvedTelefon,
               },
-              buchungsdetails: registration,
+              buchungsdetails: cleanRegistration,
             }),
           });
 

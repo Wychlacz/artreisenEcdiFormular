@@ -95,6 +95,73 @@ export default function App() {
     const viteMakeWebhookUrl = (import.meta as any).env?.VITE_MAKE_WEBHOOK_URL || HARDCODED_MAKE_WEBHOOK_URL;
     if (viteMakeWebhookUrl) {
       console.log('Übermittle Buchungsdaten direkt ans Make.com-Webhook (Frontend)...');
+
+      // Transform registration details so companions are embedded in the room objects
+      const {
+        zimmer: zimmerArray = [],
+        mitreisende: mitreisendeArray = [],
+        ...restOfRegistration
+      } = newRegistration;
+
+      const transformedZimmer = zimmerArray.map((z: any, idx: number) => {
+        const zimmerNummer = idx + 1;
+        const teilnehmer: any[] = [];
+
+        // Rule 1: The main traveler belongs automatically to Room 1 (zimmerNummer: 1)
+        if (zimmerNummer === 1) {
+          if (newRegistration.isHauptanmelderReisender !== false) {
+            teilnehmer.push({
+              vorname: newRegistration.vorname || "",
+              nachname: newRegistration.nachname || "",
+              geburtsdatum: newRegistration.geburtsdatum || "",
+              isHauptanmelder: true
+            });
+          } else {
+            teilnehmer.push({
+              vorname: newRegistration.abweichenderReisenderVorname || "",
+              nachname: newRegistration.abweichenderReisenderNachname || "",
+              geburtsdatum: newRegistration.abweichenderReisenderGeburtsdatum || "",
+              isHauptanmelder: false
+            });
+          }
+        }
+
+        // Rule 2: All mitreisende with zimmerIndex matching this room are assigned
+        const roomCompanions = mitreisendeArray.filter((m: any) => {
+          const compRoomIdx = m.zimmerIndex !== undefined ? Number(m.zimmerIndex) : 0;
+          return compRoomIdx === idx;
+        });
+
+        roomCompanions.forEach((m: any) => {
+          teilnehmer.push({
+            vorname: m.vorname || "",
+            nachname: m.nachname || "",
+            geburtsdatum: m.geburtsdatum || "",
+            isHauptanmelder: false
+          });
+        });
+
+        // Rule 4: Keep key fields on the room level
+        return {
+          zimmerNummer,
+          zimmertyp: z.zimmertyp || newRegistration.zimmertyp || "",
+          abflughafen: newRegistration.abflughafen === 'andere Flughäfen' ? (newRegistration.abflughafenAnderer || newRegistration.abflughafen) : (newRegistration.abflughafen || ""),
+          zahlungsart: newRegistration.zahlungsart || "",
+          flexOption: newRegistration.flexOption || "",
+          versicherungInfoBenoetigt: newRegistration.versicherungInfoBenoetigt || "",
+          teilnehmer
+        };
+      });
+
+      const cleanRegistration = {
+        ...restOfRegistration,
+        zimmer: transformedZimmer
+      };
+
+      // Remove mitreisende and mitreisendeArray properties as requested
+      delete (cleanRegistration as any).mitreisende;
+      delete (cleanRegistration as any).mitreisendeArray;
+
       fetch(viteMakeWebhookUrl, {
         method: 'POST',
         headers: {
@@ -116,7 +183,7 @@ export default function App() {
             land: newRegistration.land,
             telefon: newRegistration.telefonMobil,
           },
-          buchungsdetails: newRegistration,
+          buchungsdetails: cleanRegistration,
         }),
       })
         .then(res => {
