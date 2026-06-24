@@ -221,19 +221,19 @@ GESETZLICHE BESTÄTIGUNGEN:
 
           const transformedZimmer = zimmerArray.map((z: any, idx: number) => {
             const zimmerNummer = idx + 1;
-            const teilnehmer: any[] = [];
+            const rawTeilnehmer: any[] = [];
 
             // Rule 1: The main traveler belongs automatically to Room 1 (zimmerNummer: 1)
             if (zimmerNummer === 1) {
               if (registration.isHauptanmelderReisender !== false) {
-                teilnehmer.push({
+                rawTeilnehmer.push({
                   vorname: registration.vorname || "",
                   nachname: registration.nachname || "",
                   geburtsdatum: registration.geburtsdatum || "",
                   isHauptanmelder: true
                 });
               } else {
-                teilnehmer.push({
+                rawTeilnehmer.push({
                   vorname: registration.abweichenderReisenderVorname || "",
                   nachname: registration.abweichenderReisenderNachname || "",
                   geburtsdatum: registration.abweichenderReisenderGeburtsdatum || "",
@@ -249,13 +249,33 @@ GESETZLICHE BESTÄTIGUNGEN:
             });
 
             roomCompanions.forEach((m: any) => {
-              teilnehmer.push({
+              rawTeilnehmer.push({
                 vorname: m.vorname || "",
                 nachname: m.nachname || "",
                 geburtsdatum: m.geburtsdatum || "",
                 isHauptanmelder: false
               });
             });
+
+            const teilnehmer = rawTeilnehmer.map((t: any) => {
+              const vollerName = `${t.vorname} ${t.nachname}`.trim();
+              let geburtsdatumFormatiert = t.geburtsdatum || "";
+              if (geburtsdatumFormatiert && geburtsdatumFormatiert.includes("-")) {
+                const parts = geburtsdatumFormatiert.split("-");
+                if (parts.length === 3) {
+                  geburtsdatumFormatiert = `${parts[2]}.${parts[1]}.${parts[0]}`;
+                }
+              }
+              return {
+                ...t,
+                vollerName,
+                geburtsdatumFormatiert
+              };
+            });
+
+            const teilnehmerListeText = teilnehmer
+              .map((t: any) => `• ${t.vollerName} (${t.geburtsdatumFormatiert})`)
+              .join("\n");
 
             // Rule 4: Keep key fields on the room level
             return {
@@ -265,7 +285,8 @@ GESETZLICHE BESTÄTIGUNGEN:
               zahlungsart: registration.zahlungsart || "",
               flexOption: registration.flexOption || "",
               versicherungInfoBenoetigt: registration.versicherungInfoBenoetigt || "",
-              teilnehmer
+              teilnehmer,
+              teilnehmerListeText
             };
           });
 
