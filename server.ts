@@ -27,9 +27,13 @@ async function startServer() {
         vorname,
         nachname,
         strasse,
+        strasseHausnummer,
+        plz,
+        ort,
         plzOrt,
         land,
         telefon,
+        telefonMobil,
         email,
         personenAnzahl,
         mitreisende,
@@ -69,6 +73,10 @@ async function startServer() {
         abweichenderReisenderNachname,
         abweichenderReisenderGeburtsdatum,
       } = registration;
+
+      const resolvedStrasse = strasseHausnummer || strasse || "-";
+      const resolvedPlzOrt = (plz && ort) ? `${plz} ${ort}` : (plzOrt || "-");
+      const resolvedTelefon = telefonMobil || telefon || "-";
 
       const subject = `Neue Buchung ${id} - ${vorname} ${nachname} - ECDI Spring Camp`;
 
@@ -111,10 +119,10 @@ Anrede:           ${anrede || "-"}
 Titel:            ${titel || "-"}
 Name:             ${vorname} ${nachname}
 E-Mail:           ${email}
-Straße:           ${strasse || "-"}
-PLZ / Ort:        ${plzOrt || "-"}
+Straße:           ${resolvedStrasse}
+PLZ / Ort:        ${resolvedPlzOrt}
 Land:             ${land || "-"}
-Telefon:          ${telefon || "-"}
+Telefon:          ${resolvedTelefon}
 
 TATSÄCHLICHER REISEGAST FÜR ZIMMER 1:
 -------------------------------------------------------------------------
@@ -220,10 +228,10 @@ GESETZLICHE BESTÄTIGUNGEN:
                 vorname,
                 nachname,
                 email,
-                strasse,
-                plzOrt,
+                strasse: resolvedStrasse,
+                plzOrt: resolvedPlzOrt,
                 land,
-                telefon,
+                telefon: resolvedTelefon,
               },
               buchungsdetails: registration,
             }),
