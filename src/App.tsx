@@ -161,16 +161,23 @@ export default function App() {
           .map((t: any) => `• ${t.vollerName} (${t.geburtsdatumFormatiert})`)
           .join("\n");
 
+        const zimmertyp = z.zimmertyp || newRegistration.zimmertyp || "";
+        const teilnehmerBullets = teilnehmer
+          .map((t: any) => `• ${t.vollerName} (${t.geburtsdatumFormatiert})`)
+          .join("\n\n");
+        const zimmerText = `Zimmer ${zimmerNummer}\n${zimmertyp}\n\nReiseteilnehmer\n\n${teilnehmerBullets}\n\n--------------------------------------------------`;
+
         // Rule 4: Keep key fields on the room level
         return {
           zimmerNummer,
-          zimmertyp: z.zimmertyp || newRegistration.zimmertyp || "",
+          zimmertyp,
           abflughafen: newRegistration.abflughafen === 'andere Flughäfen' ? (newRegistration.abflughafenAnderer || newRegistration.abflughafen) : (newRegistration.abflughafen || ""),
           zahlungsart: newRegistration.zahlungsart || "",
           flexOption: newRegistration.flexOption || "",
           versicherungInfoBenoetigt: newRegistration.versicherungInfoBenoetigt || "",
           teilnehmer,
-          teilnehmerListeText
+          teilnehmerListeText,
+          zimmerText
         };
       });
 

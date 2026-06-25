@@ -277,16 +277,23 @@ GESETZLICHE BESTÄTIGUNGEN:
               .map((t: any) => `• ${t.vollerName} (${t.geburtsdatumFormatiert})`)
               .join("\n");
 
+            const zimmertyp = z.zimmertyp || registration.zimmertyp || "";
+            const teilnehmerBullets = teilnehmer
+              .map((t: any) => `• ${t.vollerName} (${t.geburtsdatumFormatiert})`)
+              .join("\n\n");
+            const zimmerText = `Zimmer ${zimmerNummer}\n${zimmertyp}\n\nReiseteilnehmer\n\n${teilnehmerBullets}\n\n--------------------------------------------------`;
+
             // Rule 4: Keep key fields on the room level
             return {
               zimmerNummer,
-              zimmertyp: z.zimmertyp || registration.zimmertyp || "",
+              zimmertyp,
               abflughafen: registration.abflughafen === 'andere Flughäfen' ? (registration.abflughafenAnderer || registration.abflughafen) : (registration.abflughafen || ""),
               zahlungsart: registration.zahlungsart || "",
               flexOption: registration.flexOption || "",
               versicherungInfoBenoetigt: registration.versicherungInfoBenoetigt || "",
               teilnehmer,
-              teilnehmerListeText
+              teilnehmerListeText,
+              zimmerText
             };
           });
 
