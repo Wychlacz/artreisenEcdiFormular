@@ -49,6 +49,8 @@ const DEFAULT_FORM_STATE = {
   versicherungInfoBenoetigt: '' as 'Ja' | 'Nein' | '',
   flexOption: '' as 'Ja' | 'Nein' | '',
   zahlungsart: '' as 'Lastschrift' | 'Überweisung' | 'Kreditkarte' | '',
+  zahlungLastschriftDatenEingeben: 'online' as 'online' | 'telefonisch',
+  zahlungKreditkarteDatenEingeben: 'online' as 'online' | 'telefonisch',
   zahlungIban: '',
   zahlungKontoinhaber: '',
   zahlungKreditkarteNummer: '',
@@ -220,13 +222,6 @@ export default function RegistrationForm({ onSubmit, onShowLegal, onShowAdmin }:
 
       if (!formData.zahlungsart) {
         newErrors.zahlungsart = 'Bitte wählen Sie Ihre bevorzugte Zahlungsart.';
-      } else if (formData.zahlungsart === 'Lastschrift') {
-        if (!formData.zahlungIban) {
-          newErrors.zahlungIban = 'Bitte geben Sie Ihre IBAN für den Lastschrift-Einzug ein.';
-        }
-        if (!formData.zahlungKontoinhaber) {
-          newErrors.zahlungKontoinhaber = 'Bitte geben Sie den Kontoinhaber ein.';
-        }
       }
 
       if (!formData.dsgvoEinverstaendnis) {
@@ -386,10 +381,10 @@ export default function RegistrationForm({ onSubmit, onShowLegal, onShowAdmin }:
       <div className="bg-white p-6 md:p-8 border-b border-brand-gray/60" id="form-brand-header-integrated">
         <div className="border-b border-brand-gray/50 pb-6 mb-6">
           <h2 className="text-lg md:text-xl font-display font-black text-brand-dark-brown">
-            Reisebüro art reisen GmbH
+            ECDI SPRING CAMP  29.04. - 03.05.2027
           </h2>
-          <p className="text-xs md:text-sm text-gray-500 mt-1 font-sans font-medium">
-            Exklusiver Servicepartner für das ECDI Spring Camp auf Fuerteventura
+          <p className="text-sm md:text-base text-brand-blue mt-1.5 font-sans font-semibold">
+            art reisen GmbH ist Exclusiver Servicepartner für das ECDI Spring Camp
           </p>
         </div>
 
@@ -838,10 +833,10 @@ export default function RegistrationForm({ onSubmit, onShowLegal, onShowAdmin }:
                     id="isFirmenrechnung"
                     checked={formData.isFirmenrechnung || false}
                     onChange={(e) => updateField('isFirmenrechnung', e.target.checked)}
-                    className="w-4 h-4 text-brand-blue border-brand-gray rounded focus:ring-brand-blue cursor-pointer mt-0.5 flex-shrink-0"
+                    className="w-4 h-4 text-brand-orange border-brand-gray rounded focus:ring-brand-orange cursor-pointer mt-0.5 flex-shrink-0"
                   />
-                  <label htmlFor="isFirmenrechnung" className="text-xs font-display font-bold text-brand-dark-brown select-none cursor-pointer flex items-start gap-1.5 leading-relaxed">
-                    <Sheet className="w-4 h-4 text-brand-blue/80 mt-0.5 flex-shrink-0" />
+                  <label htmlFor="isFirmenrechnung" className="text-xs md:text-sm font-display font-bold text-brand-orange select-none cursor-pointer flex items-start gap-1.5 leading-relaxed">
+                    <Sheet className="w-4 h-4 text-brand-orange mt-0.5 flex-shrink-0" />
                     <span>Sollte die Rechnung auf ein Unternehmen ausgestellt werden, benötigen wir bitte noch die abweichende Firmenanschrift. Bitte teilen Sie uns in diesem Fall den exakten Firmennamen und – falls gewünscht – einen zusätzlichen Ansprechpartner (z. B. Sekretariat oder Abteilung) mit.</span>
                   </label>
                 </div>
@@ -1108,7 +1103,7 @@ export default function RegistrationForm({ onSubmit, onShowLegal, onShowAdmin }:
                       }}
                       className="mt-0.5 border-brand-gray text-brand-orange rounded-xs"
                     />
-                    <span className="font-semibold text-xs text-brand-dark-brown">Folgende Dinge bitte ich zu beachten (bitte ins Textfeld einfügen)</span>
+                    <span className="font-semibold text-xs text-brand-dark-brown">Folgende "Dinge bitte ich zu beachten" (z.B. Zimmerlage oder Nummer, Topper usw.)</span>
                   </label>
                   
                   {formData.zusatzBeachten && (
@@ -1118,7 +1113,7 @@ export default function RegistrationForm({ onSubmit, onShowLegal, onShowAdmin }:
                         onChange={(e) => updateField('zusatzBeachtenText', e.target.value)}
                         rows={2}
                         className="w-full bg-white px-3 py-2 text-xs border border-brand-gray rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-blue font-sans"
-                        placeholder="Ernährungsunverträglichkeiten, körperliche Einschränkungen, Zimmerwünsche nahe Aufzug..."
+                        placeholder="Zimmerlage, Zimmernummer, Topper, Ernährungsunverträglichkeiten, körperliche Einschränkungen..."
                       />
                       {errors.zusatzBeachtenText && (
                         <p className="text-[10px] text-rose-600 mt-1 font-sans">{errors.zusatzBeachtenText}</p>
@@ -1406,54 +1401,96 @@ export default function RegistrationForm({ onSubmit, onShowLegal, onShowAdmin }:
                       <h4 className="text-xs font-display font-black text-brand-dark-brown uppercase tracking-wide">
                         Angaben zum Lastschrifteinzug
                       </h4>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        <div className="space-y-1">
-                          <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider">
-                            Kontoinhaber <span className="text-brand-orange">*</span>
-                          </label>
-                          <input
-                            type="text"
-                            value={formData.zahlungKontoinhaber}
-                            onChange={(e) => {
-                              updateField('zahlungKontoinhaber', e.target.value);
-                              if (errors.zahlungKontoinhaber) {
-                                setErrors(prev => {
-                                  const c = { ...prev };
-                                  delete c.zahlungKontoinhaber;
-                                  return c;
-                                });
-                              }
-                            }}
-                            className="w-full bg-white px-3 py-2 text-xs border border-brand-gray rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-blue font-sans font-bold"
-                            placeholder="Z.B. Max Mustermann"
-                          />
-                          {errors.zahlungKontoinhaber && (
-                            <p className="text-[10px] text-rose-600 font-sans font-semibold">{errors.zahlungKontoinhaber}</p>
-                          )}
+
+                      {/* Auswahl, ob Daten online eingetragen werden sollen */}
+                      <div className="bg-white/70 p-3 rounded-xl border border-brand-gray flex flex-col gap-2">
+                        <span className="text-[11px] font-bold text-brand-dark-brown">
+                          Wie möchten Sie uns Ihre Bankdaten übermitteln?
+                        </span>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          <button
+                            type="button"
+                            onClick={() => updateField('zahlungLastschriftDatenEingeben', 'online')}
+                            className={`py-1.5 px-3 rounded-lg text-xs font-semibold cursor-pointer border text-center transition-all ${
+                              formData.zahlungLastschriftDatenEingeben === 'online'
+                                ? 'bg-brand-blue/10 border-brand-blue text-brand-blue'
+                                : 'bg-white border-gray-300 text-gray-700 hover:border-gray-400'
+                            }`}
+                          >
+                            Jetzt online eingeben
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => updateField('zahlungLastschriftDatenEingeben', 'telefonisch')}
+                            className={`py-1.5 px-3 rounded-lg text-xs font-semibold cursor-pointer border text-center transition-all ${
+                              formData.zahlungLastschriftDatenEingeben === 'telefonisch'
+                                ? 'bg-brand-blue/10 border-brand-blue text-brand-blue'
+                                : 'bg-white border-gray-300 text-gray-700 hover:border-gray-400'
+                            }`}
+                          >
+                            Später auf anderem Weg (z.B. telefonisch)
+                          </button>
                         </div>
-                        <div className="space-y-1">
-                          <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider">
-                            IBAN <span className="text-brand-orange">*</span>
-                          </label>
-                          <input
-                            type="text"
-                            value={formData.zahlungIban}
-                            onChange={(e) => {
-                              updateField('zahlungIban', e.target.value);
-                              if (errors.zahlungIban) {
-                                setErrors(prev => {
-                                  const c = { ...prev };
-                                  delete c.zahlungIban;
-                                  return c;
-                                });
-                              }
-                            }}
-                            className="w-full bg-white px-3 py-2 text-xs border border-brand-gray rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-blue font-sans font-mono font-bold uppercase"
-                            placeholder="DE00 0000 0000 0000 0000 00"
-                          />
-                          {errors.zahlungIban && (
-                            <p className="text-[10px] text-rose-600 font-sans font-semibold">{errors.zahlungIban}</p>
-                          )}
+                      </div>
+
+                      {formData.zahlungLastschriftDatenEingeben === 'online' && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
+                          <div className="space-y-1">
+                            <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider">
+                              Kontoinhaber
+                            </label>
+                            <input
+                              type="text"
+                              value={formData.zahlungKontoinhaber}
+                              onChange={(e) => {
+                                updateField('zahlungKontoinhaber', e.target.value);
+                                if (errors.zahlungKontoinhaber) {
+                                  setErrors(prev => {
+                                    const c = { ...prev };
+                                    delete c.zahlungKontoinhaber;
+                                    return c;
+                                  });
+                                }
+                              }}
+                              className="w-full bg-white px-3 py-2 text-xs border border-brand-gray rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-blue font-sans font-bold"
+                              placeholder="Z.B. Max Mustermann"
+                            />
+                            {errors.zahlungKontoinhaber && (
+                              <p className="text-[10px] text-rose-600 font-sans font-semibold">{errors.zahlungKontoinhaber}</p>
+                            )}
+                          </div>
+                          <div className="space-y-1">
+                            <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider">
+                              IBAN
+                            </label>
+                            <input
+                              type="text"
+                              value={formData.zahlungIban}
+                              onChange={(e) => {
+                                updateField('zahlungIban', e.target.value);
+                                if (errors.zahlungIban) {
+                                  setErrors(prev => {
+                                    const c = { ...prev };
+                                    delete c.zahlungIban;
+                                    return c;
+                                  });
+                                }
+                              }}
+                              className="w-full bg-white px-3 py-2 text-xs border border-brand-gray rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-blue font-sans font-mono font-bold uppercase"
+                              placeholder="DE00 0000 0000 0000 0000 00"
+                            />
+                            {errors.zahlungIban && (
+                              <p className="text-[10px] text-rose-600 font-sans font-semibold">{errors.zahlungIban}</p>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Alternativer Hinweis unter Lastschrift */}
+                      <div className="bg-brand-blue/5 border border-brand-blue/20 p-3 rounded-lg text-xs text-brand-blue font-sans flex items-start gap-2 leading-relaxed mt-2">
+                        <span className="text-sm shrink-0">📞</span>
+                        <div>
+                          <strong>Alternativer Hinweis:</strong> Sie können uns Ihre Kontodaten auch sehr gerne <strong>telefonisch durchgeben</strong>, falls Sie diese nicht online eintragen möchten! Weisen Sie uns einfach darauf hin.
                         </div>
                       </div>
                     </motion.div>
@@ -1470,48 +1507,81 @@ export default function RegistrationForm({ onSubmit, onShowLegal, onShowAdmin }:
                       <h4 className="text-xs font-display font-black text-brand-dark-brown uppercase tracking-wide">
                         Angaben zur Kreditkarte
                       </h4>
-                      
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                        <div className="space-y-1">
-                          <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider">
-                            Karteninhaber (wie auf Karte)
-                          </label>
-                          <input
-                            type="text"
-                            value={formData.zahlungKreditkarteInhaber || ''}
-                            onChange={(e) => updateField('zahlungKreditkarteInhaber', e.target.value)}
-                            className="w-full bg-white px-3 py-2 text-xs border border-brand-gray rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-blue font-sans font-bold"
-                            placeholder="Z.B. MAX MUSTERMANN"
-                          />
-                        </div>
-                        <div className="space-y-1">
-                          <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider">
-                            Kreditkartennummer
-                          </label>
-                          <input
-                            type="text"
-                            value={formData.zahlungKreditkarteNummer || ''}
-                            onChange={(e) => updateField('zahlungKreditkarteNummer', e.target.value)}
-                            className="w-full bg-white px-3 py-2 text-xs border border-brand-gray rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-blue font-sans font-mono font-bold"
-                            placeholder="4111 2222 3333 4444"
-                          />
-                        </div>
-                        <div className="space-y-1">
-                          <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider">
-                            Gültig bis (MM/JJ)
-                          </label>
-                          <input
-                            type="text"
-                            value={formData.zahlungKreditkarteGueltig || ''}
-                            onChange={(e) => updateField('zahlungKreditkarteGueltig', e.target.value)}
-                            className="w-full bg-white px-3 py-2 text-xs border border-brand-gray rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-blue font-sans font-bold text-center"
-                            placeholder="MM/JJ"
-                          />
+
+                      {/* Auswahl, ob Daten online eingetragen werden sollen */}
+                      <div className="bg-white/70 p-3 rounded-xl border border-brand-gray flex flex-col gap-2">
+                        <span className="text-[11px] font-bold text-brand-dark-brown">
+                          Wie möchten Sie uns Ihre Kreditkartendaten übermitteln?
+                        </span>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          <button
+                            type="button"
+                            onClick={() => updateField('zahlungKreditkarteDatenEingeben', 'online')}
+                            className={`py-1.5 px-3 rounded-lg text-xs font-semibold cursor-pointer border text-center transition-all ${
+                              formData.zahlungKreditkarteDatenEingeben === 'online'
+                                ? 'bg-brand-blue/10 border-brand-blue text-brand-blue'
+                                : 'bg-white border-gray-300 text-gray-700 hover:border-gray-400'
+                            }`}
+                          >
+                            Jetzt online eingeben
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => updateField('zahlungKreditkarteDatenEingeben', 'telefonisch')}
+                            className={`py-1.5 px-3 rounded-lg text-xs font-semibold cursor-pointer border text-center transition-all ${
+                              formData.zahlungKreditkarteDatenEingeben === 'telefonisch'
+                                ? 'bg-brand-blue/10 border-brand-blue text-brand-blue'
+                                : 'bg-white border-gray-300 text-gray-700 hover:border-gray-400'
+                            }`}
+                          >
+                            Später auf anderem Weg (z.B. telefonisch)
+                          </button>
                         </div>
                       </div>
 
-                      {/* Hinweis, Kreditkarte telefonisch durchzugeben */}
-                      <div className="bg-brand-blue/5 border border-brand-blue/20 p-3 rounded-lg text-xs text-brand-blue font-sans flex items-start gap-2 leading-relaxed">
+                      {formData.zahlungKreditkarteDatenEingeben === 'online' && (
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-1">
+                          <div className="space-y-1">
+                            <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider">
+                              Karteninhaber (wie auf Karte)
+                            </label>
+                            <input
+                              type="text"
+                              value={formData.zahlungKreditkarteInhaber || ''}
+                              onChange={(e) => updateField('zahlungKreditkarteInhaber', e.target.value)}
+                              className="w-full bg-white px-3 py-2 text-xs border border-brand-gray rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-blue font-sans font-bold"
+                              placeholder="Z.B. MAX MUSTERMANN"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider">
+                              Kreditkartennummer
+                            </label>
+                            <input
+                              type="text"
+                              value={formData.zahlungKreditkarteNummer || ''}
+                              onChange={(e) => updateField('zahlungKreditkarteNummer', e.target.value)}
+                              className="w-full bg-white px-3 py-2 text-xs border border-brand-gray rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-blue font-sans font-mono font-bold"
+                              placeholder="4111 2222 3333 4444"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider">
+                              Gültig bis (MM/JJ)
+                            </label>
+                            <input
+                              type="text"
+                              value={formData.zahlungKreditkarteGueltig || ''}
+                              onChange={(e) => updateField('zahlungKreditkarteGueltig', e.target.value)}
+                              className="w-full bg-white px-3 py-2 text-xs border border-brand-gray rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-blue font-sans font-bold text-center"
+                              placeholder="MM/JJ"
+                            />
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Alternativer Hinweis unter Kreditkarte */}
+                      <div className="bg-brand-blue/5 border border-brand-blue/20 p-3 rounded-lg text-xs text-brand-blue font-sans flex items-start gap-2 leading-relaxed mt-2">
                         <span className="text-sm shrink-0">📞</span>
                         <div>
                           <strong>Alternativer Hinweis:</strong> Sie können uns Ihre Kreditkartendaten auch sehr gerne <strong>telefonisch durchgeben</strong>, falls Sie diese nicht online eintragen möchten! Weisen Sie uns einfach darauf hin.

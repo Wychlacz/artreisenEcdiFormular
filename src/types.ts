@@ -61,6 +61,8 @@ export interface Registration {
   versicherungInfoBenoetigt: 'Ja' | 'Nein' | '';
   flexOption: 'Ja' | 'Nein' | '';
   zahlungsart: 'Lastschrift' | 'Überweisung' | 'Kreditkarte' | '';
+  zahlungLastschriftDatenEingeben?: 'online' | 'telefonisch' | '';
+  zahlungKreditkarteDatenEingeben?: 'online' | 'telefonisch' | '';
   zahlungIban?: string;
   zahlungKontoinhaber?: string;
   zahlungKreditkarteNummer?: string;
