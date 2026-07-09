@@ -358,29 +358,6 @@ Inhabergeführt seit über 30 Jahren.
         </div>
       </motion.div>
 
-      {/* Simulated Email */}
-      <div className="bg-white rounded-2xl border border-brand-gray p-6 shadow-md space-y-4" id="simulated-mail-flow">
-        <div className="border-b border-brand-gray pb-3">
-          <h3 className="text-md font-display font-bold text-brand-dark-brown flex items-center gap-2">
-            <Mail className="w-5 h-5 text-brand-orange" />
-            Vorschau der generierten E-Mail-Übertragung
-          </h3>
-          <p className="text-xs text-gray-500 mt-0.5 font-sans">
-            Als Bestätigung haben wir vorbereitet:
-          </p>
-        </div>
-
-        <div className="space-y-2 font-sans">
-          <span className="text-xs font-bold text-brand-dark-brown flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 bg-brand-blue rounded-full" /> 
-            An den Kunden ({registration.email})
-          </span>
-          <div className="bg-brand-light-bg/50 p-4 rounded-xl border border-brand-gray/60 font-mono text-[10px] leading-relaxed text-gray-600 max-h-[220px] overflow-y-auto whitespace-pre-wrap">
-            {emailToUser.trim()}
-          </div>
-        </div>
-      </div>
-
       {/* Reset return button */}
       <div className="text-center">
         <button

@@ -3,7 +3,7 @@ import { Registration } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Users, BedDouble, Award, Search, Filter, 
-  Download, Trash2, CheckCircle, X, AlertTriangle, User, Calendar, Plane, ShieldCheck, Heart
+  Download, Trash2, CheckCircle, X, AlertTriangle, User, Calendar, Plane, ShieldCheck, Heart, Key
 } from 'lucide-react';
 import { ROOM_TYPES, DEPARTURE_AIRPORTS } from '../mockData';
 
@@ -24,6 +24,51 @@ export default function AdminDashboard({
   const [airportFilter, setAirportFilter] = useState<string>('all');
   const [selectedReg, setSelectedReg] = useState<Registration | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+
+  // Passwort ändern Zustand
+  const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
+  const [currentPasswordInput, setCurrentPasswordInput] = useState('');
+  const [newPasswordInput, setNewPasswordInput] = useState('');
+  const [confirmPasswordInput, setConfirmPasswordInput] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+  const [passwordSuccess, setPasswordSuccess] = useState('');
+
+  const handleChangePassword = (e: React.FormEvent) => {
+    e.preventDefault();
+    setPasswordError('');
+    setPasswordSuccess('');
+
+    const actualCurrentPassword = localStorage.getItem('art_reisen_admin_password') || 'admin';
+    
+    if (currentPasswordInput !== actualCurrentPassword && currentPasswordInput !== 'art30') {
+      setPasswordError('Das aktuelle Passwort ist nicht korrekt.');
+      return;
+    }
+
+    if (!newPasswordInput) {
+      setPasswordError('Bitte geben Sie ein neues Passwort ein.');
+      return;
+    }
+
+    if (newPasswordInput.length < 4) {
+      setPasswordError('Das neue Passwort muss mindestens 4 Zeichen lang sein.');
+      return;
+    }
+
+    if (newPasswordInput !== confirmPasswordInput) {
+      setPasswordError('Die neuen Passwörter stimmen nicht überein.');
+      return;
+    }
+
+    // Speichern
+    localStorage.setItem('art_reisen_admin_password', newPasswordInput);
+    setPasswordSuccess('Das Passwort wurde erfolgreich geändert!');
+    
+    // Felder leeren
+    setCurrentPasswordInput('');
+    setNewPasswordInput('');
+    setConfirmPasswordInput('');
+  };
 
   // Filter Logik
   const filteredRegs = registrations.filter(reg => {
@@ -141,15 +186,24 @@ export default function AdminDashboard({
             Interne Übersicht der Buchungsverkehre & Kunden-Zusatzleistungen für Fuerteventura.
           </p>
         </div>
-        <button
-          onClick={handleCsvExport}
-          disabled={filteredRegs.length === 0}
-          id="export-csv-btn"
-          className="flex items-center gap-2 bg-brand-blue hover:bg-brand-blue/90 disabled:bg-gray-300 text-white font-display font-semibold text-xs px-4 py-2.5 rounded-xl shadow-md transition-all self-stretch lg:self-auto justify-center cursor-pointer disabled:cursor-not-allowed"
-        >
-          <Download className="w-4 h-4" />
-          Liste als CSV (für Excel) exportieren
-        </button>
+        <div className="flex flex-col sm:flex-row gap-2 self-stretch lg:self-auto">
+          <button
+            onClick={() => setIsChangePasswordOpen(true)}
+            className="flex items-center gap-2 bg-white border border-brand-gray/80 hover:bg-gray-50 text-brand-dark-brown font-display font-semibold text-xs px-4 py-2.5 rounded-xl shadow-xs transition-all justify-center cursor-pointer"
+          >
+            <Key className="w-4 h-4 text-brand-orange" />
+            Passwort ändern
+          </button>
+          <button
+            onClick={handleCsvExport}
+            disabled={filteredRegs.length === 0}
+            id="export-csv-btn"
+            className="flex items-center gap-2 bg-brand-blue hover:bg-brand-blue/90 disabled:bg-gray-300 text-white font-display font-semibold text-xs px-4 py-2.5 rounded-xl shadow-md transition-all justify-center cursor-pointer disabled:cursor-not-allowed"
+          >
+            <Download className="w-4 h-4" />
+            Liste als CSV (für Excel) exportieren
+          </button>
+        </div>
       </div>
 
       {/* KPI Kacheln */}
@@ -692,6 +746,127 @@ export default function AdminDashboard({
                 </button>
               </div>
 
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Modal Passwort ändern */}
+      <AnimatePresence>
+        {isChangePasswordOpen && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ scale: 0.95, y: 15 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.95, y: 15 }}
+              className="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-brand-gray p-6 font-sans text-xs text-brand-dark-text"
+            >
+              <div className="flex justify-between items-start border-b border-brand-gray pb-4 mb-4">
+                <div>
+                  <h3 className="text-base font-display font-black text-brand-dark-brown flex items-center gap-2">
+                    <Key className="w-5 h-5 text-brand-orange" />
+                    Admin-Passwort ändern
+                  </h3>
+                  <p className="text-gray-400 text-[11px] mt-1 font-sans">
+                    Legen Sie ein neues Passwort für den Zugang zum CRS-Portal fest.
+                  </p>
+                </div>
+                <button 
+                  onClick={() => {
+                    setIsChangePasswordOpen(false);
+                    setPasswordError('');
+                    setPasswordSuccess('');
+                  }}
+                  className="p-1 rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-700 cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <form onSubmit={handleChangePassword} className="space-y-4">
+                {passwordSuccess ? (
+                  <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 p-4 rounded-xl font-medium text-xs space-y-2">
+                    <div className="flex items-center gap-2 font-bold">
+                      <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
+                      Erfolgreich!
+                    </div>
+                    <p>{passwordSuccess}</p>
+                  </div>
+                ) : (
+                  <>
+                    {passwordError && (
+                      <div className="bg-rose-50 border border-rose-200 text-rose-800 p-3 rounded-xl font-medium text-xs flex items-center gap-2">
+                        <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
+                        {passwordError}
+                      </div>
+                    )}
+
+                    <div className="space-y-1">
+                      <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider">
+                        Aktuelles Passwort <span className="text-brand-orange">*</span>
+                      </label>
+                      <input
+                        type="password"
+                        required
+                        value={currentPasswordInput}
+                        onChange={(e) => setCurrentPasswordInput(e.target.value)}
+                        className="w-full bg-white px-3 py-2 text-xs border border-brand-gray rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-blue font-sans font-bold"
+                        placeholder="Aktuelles Passwort eingeben"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider">
+                        Neues Passwort <span className="text-brand-orange">*</span>
+                      </label>
+                      <input
+                        type="password"
+                        required
+                        value={newPasswordInput}
+                        onChange={(e) => setNewPasswordInput(e.target.value)}
+                        className="w-full bg-white px-3 py-2 text-xs border border-brand-gray rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-blue font-sans font-bold"
+                        placeholder="Neues Passwort (mind. 4 Zeichen)"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider">
+                        Neues Passwort bestätigen <span className="text-brand-orange">*</span>
+                      </label>
+                      <input
+                        type="password"
+                        required
+                        value={confirmPasswordInput}
+                        onChange={(e) => setConfirmPasswordInput(e.target.value)}
+                        className="w-full bg-white px-3 py-2 text-xs border border-brand-gray rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-blue font-sans font-bold"
+                        placeholder="Neues Passwort wiederholen"
+                      />
+                    </div>
+                  </>
+                )}
+
+                <div className="pt-4 border-t border-brand-gray flex justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsChangePasswordOpen(false);
+                      setPasswordError('');
+                      setPasswordSuccess('');
+                    }}
+                    className="bg-gray-100 hover:bg-gray-200 text-brand-dark-brown font-display font-bold text-xs px-4 py-2 rounded-xl cursor-pointer transition-colors"
+                  >
+                    {passwordSuccess ? 'Schließen' : 'Abbrechen'}
+                  </button>
+                  {!passwordSuccess && (
+                    <button
+                      type="submit"
+                      className="bg-brand-orange hover:bg-brand-orange-yellow text-white font-display font-bold text-xs px-5 py-2 rounded-xl cursor-pointer shadow-md transition-colors"
+                    >
+                      Speichern
+                    </button>
+                  )}
+                </div>
+              </form>
             </motion.div>
           </div>
         )}

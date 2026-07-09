@@ -250,11 +250,12 @@ export default function App() {
   // Admin Passwort freischalten
   const handleUnlockAdmin = (e: React.FormEvent) => {
     e.preventDefault();
-    if (adminPassword === 'art30' || adminPassword === 'admin') {
+    const storedPassword = localStorage.getItem('art_reisen_admin_password') || 'admin';
+    if (adminPassword === storedPassword || adminPassword === 'art30') {
       setIsAdminUnlocked(true);
       setAdminError('');
     } else {
-      setAdminError('Ungültiges Passwort. (Tipp: Verwenden Sie "admin")');
+      setAdminError('Ungültiges Passwort.');
     }
   };
 
@@ -349,7 +350,7 @@ export default function App() {
                       <input
                         type="password"
                         id="admin-pass"
-                        placeholder='Kennwort (Mitarbeitertipp: "admin")'
+                        placeholder='Kennwort (Standard: "admin")'
                         value={adminPassword}
                         onChange={(e) => setAdminPassword(e.target.value)}
                         className="w-full px-3 py-2 text-sm border border-brand-gray rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-blue/30 font-sans bg-brand-light-bg/40"
