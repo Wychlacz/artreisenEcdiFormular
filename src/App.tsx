@@ -8,10 +8,12 @@ import AdminDashboard from './components/AdminDashboard';
 import ConfirmationScreen from './components/ConfirmationScreen';
 import Logo from './components/Logo';
 import { 
-  Calendar, Users, BookOpen, Settings, X, ShieldCheck, FileText, Info, ExternalLink, ArrowLeft
+  Calendar, Users, BookOpen, Settings, X, ShieldCheck, FileText, Info, ExternalLink, ArrowLeft,
+  Lock, CheckCircle, Cookie, AlertCircle
 } from 'lucide-react';
 
 const LOCAL_STORAGE_KEY = 'art_reisen_registrations_v2';
+const COOKIE_CONSENT_KEY = 'art_reisen_cookie_consent_v1';
 
 export default function App() {
   const [registrations, setRegistrations] = useState<Registration[]>([]);
@@ -26,8 +28,16 @@ export default function App() {
   // Legal Modal Zustand (Ersetzt window.alert für iFrames)
   const [legalModal, setLegalModal] = useState<'impressum' | 'datenschutz' | 'agb' | null>(null);
 
-  // Lade Registrierungen aus LocalStorage beim Start
+  // DSGVO Cookie / Storage Consent Banner
+  const [hasCookieConsent, setHasCookieConsent] = useState<boolean>(true);
+
+  // Lade Registrierungen und Consent aus LocalStorage beim Start
   useEffect(() => {
+    const savedConsent = localStorage.getItem(COOKIE_CONSENT_KEY);
+    if (!savedConsent) {
+      setHasCookieConsent(false);
+    }
+
     const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
     if (saved) {
       try {
@@ -42,6 +52,11 @@ export default function App() {
       localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(INITIAL_REGISTRATIONS));
     }
   }, []);
+
+  const acceptCookieConsent = (type: 'all' | 'essential') => {
+    localStorage.setItem(COOKIE_CONSENT_KEY, type);
+    setHasCookieConsent(true);
+  };
 
   // Sync state mit LocalStorage
   const saveRegistrations = (newList: Registration[]) => {
@@ -247,6 +262,25 @@ export default function App() {
     }
   };
 
+  // DSGVO Anonymisierung / Datensparsamkeit
+  const handleAnonymizeRegistration = (id: string) => {
+    const updated = registrations.map(reg => {
+      if (reg.id === id) {
+        return {
+          ...reg,
+          isAnonymized: true,
+          zahlungIban: '',
+          zahlungKontoinhaber: '',
+          zahlungKreditkarteNummer: '',
+          zahlungKreditkarteGueltig: '',
+          zahlungKreditkarteInhaber: ''
+        };
+      }
+      return reg;
+    });
+    saveRegistrations(updated);
+  };
+
   // Admin Passwort freischalten
   const handleUnlockAdmin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -330,6 +364,7 @@ export default function App() {
                   registrations={registrations}
                   onUpdateStatus={handleUpdateStatus}
                   onDeleteRegistration={handleDeleteRegistration}
+                  onAnonymizeRegistration={handleAnonymizeRegistration}
                 />
               ) : (
                 /* Passwort Schutz Panel */
@@ -420,79 +455,116 @@ export default function App() {
                 <div className="space-y-4">
                   <div>
                     <strong className="block text-brand-dark-brown">Betreiber der Website:</strong>
-                    <p>Reisebüro Art Reisen GmbH</p>
-                    <p>Schellingstraße 109, 80798 München</p>
-                  </div>
-                  <div>
-                    <strong className="block text-brand-dark-brown">Vertretungsberechtigte Geschäftsführerin:</strong>
-                    <p>Sabine Artmann</p>
+                    <p>Reisebüro art reisen GmbH</p>
+                    <p>Mühlenstrasse 21-23, 40822 Mettmann</p>
                   </div>
                   <div>
                     <strong className="block text-brand-dark-brown">Kontakt:</strong>
-                    <p>Telefon: +49 (0) 89 123456-0</p>
-                    <p>E-Mail: info@art-reisen.de</p>
+                    <p>Telefon: 02104 75711 (bzw. +49 2104 75711)</p>
+                    <p>E-Mail: <a href="mailto:info@artreisen.de" className="text-brand-blue underline">info@artreisen.de</a></p>
+                    <p>Website: <a href="https://artreisen.de" target="_blank" rel="noopener noreferrer" className="text-brand-blue underline">artreisen.de</a></p>
                   </div>
                   <div>
-                    <strong className="block text-brand-dark-brown">Registergericht & Handelsregisternummer:</strong>
-                    <p>Amtsgericht München, HRB 987654</p>
-                    <p>Umsatzsteuer-Identifikationsnummer gemäß § 27a UStG: DE 123456789</p>
+                    <strong className="block text-brand-dark-brown">Handelsregister:</strong>
+                    <p>Amtsgericht Wuppertal</p>
+                    <p>Umsatzsteuer-Identifikationsnummer gemäß § 27a UStG: DE119423766</p>
                   </div>
                   <div className="bg-amber-50 p-3 rounded-lg border border-amber-200/50 text-[10px] text-amber-900 leading-normal">
-                    💡 <strong>Vermittler-Information:</strong> Art Reisen vermittelt Unterkünfte und Flüge als Pauschalreisebüro im Sinne des BGB. Wir besitzen alle gesetzlich verankerten Reiseversicherungen & Insolvenzschutzbriefe.
+                    💡 <strong>Vermittler-Information:</strong> Reisebüro art reisen GmbH vermittelt Unterkünfte und Flüge als Reiseveranstalter/Reisebüro im Sinne des BGB. Wir besitzen alle gesetzlich verankerten Reiseversicherungen & Insolvenzschutzbriefe.
                   </div>
                 </div>
               )}
 
               {/* Datenschutz content */}
               {legalModal === 'datenschutz' && (
-                <div className="space-y-3">
-                  <p>
-                    Wir nehmen den Schutz Ihrer persönlichen Daten sehr ernst. Wir behandeln Ihre personenbezogenen Daten vertraulich und entsprechend den gesetzlichen Datenschutzvorschriften (DSGVO) sowie dieser Datenschutzerklärung.
-                  </p>
+                <div className="space-y-4">
+                  <div className="bg-emerald-50 p-3 rounded-lg border border-emerald-200 text-[11px] text-emerald-900 leading-normal">
+                    🛡️ <strong>Verantwortliche Stelle:</strong> Reisebüro art reisen GmbH, Mühlenstrasse 21-23, 40822 Mettmann, E-Mail: <a href="mailto:info@artreisen.de" className="text-brand-blue underline font-bold">info@artreisen.de</a>. Wir verarbeiten Ihre Daten streng im Einklang mit der EU-Datenschutz-Grundverordnung (DSGVO) und dem Bundesdatenschutzgesetz (BDSG).
+                  </div>
+
                   <div>
-                    <strong className="block text-brand-dark-brown">1. Erfassung von Daten</strong>
-                    <p>
-                      Die bei der Reiseanmeldung übermittelten Daten (Namen, Geburtsdaten, Kontaktdaten) dienen ausschließlich zur Reservierung von Zimmertypen und Flügen bei den jeweiligen Transportdienstleistern/Hoteliers auf Fuerteventura.
+                    <strong className="block text-brand-dark-brown text-xs font-bold mb-1">1. Zweck und Rechtsgrundlage der Datenverarbeitung</strong>
+                    <p className="text-[11px] text-gray-700">
+                      Die von Ihnen im Buchungsformular eingegebenen personenbezogenen Daten (Name, Vorname, Geburtsdatum, Anschrift, E-Mail, Telefonnummer, Zimmerpräferenzen sowie optionale Zahlungsdaten) werden primär zur Erfüllung des Reisevermittlungs- und Beförderungsvertrags verarbeitet (<strong>Art. 6 Abs. 1 lit. b DSGVO</strong>). Soweit Sie freiwillige Zusatzangaben oder Werbeeinwilligungen erteilen, erfolgt dies auf Grundlage Ihrer ausdrücklichen Einwilligung (<strong>Art. 6 Abs. 1 lit. a DSGVO</strong>).
                     </p>
                   </div>
+
                   <div>
-                    <strong className="block text-brand-dark-brown">2. Speicherung der Daten</strong>
-                    <p>
-                      Ihre Daten werden sicher und unter strenger Verschlüsselung gespeichert. Der Inhaberschutz wird zu jeder Zeit gewahrt. Es findet keine unbefugte Weitergabe an marketingtechnische Dritte statt.
+                    <strong className="block text-brand-dark-brown text-xs font-bold mb-1">2. Weitergabe von Daten an Leistungsträger</strong>
+                    <p className="text-[11px] text-gray-700">
+                      Zur ordnungsgemäßen Abwicklung Ihrer Fuerteventura-Reise werden erforderliche Daten an die beteiligten Leistungsträger übermittelt: die jeweilige Fluggesellschaft (z.B. Condor, Eurowings, TUI fly) zur Ausstellung der Flugtickets, das Tagungshotel (Hotel R2 Bahia Playa Design Hotel & Spa) zur Zimmerreservierung sowie ggf. Transferdienstleister oder den Insolvenzschutz-Versicherer. Eine Übermittlung an unbefugte Dritte oder zu Werbezwecken findet nicht statt.
                     </p>
                   </div>
+
                   <div>
-                    <strong className="block text-brand-dark-brown">3. Ihre Rechte (Betroffenenrechte)</strong>
-                    <p>
-                      Sie haben jederzeit das Recht auf unentgeltliche Auskunft über Herkunft, Empfänger und Zweck Ihrer gespeicherten personenbezogenen Daten sowie ein Recht auf Berichtigung, Sperrung oder Löschung dieser Daten.
+                    <strong className="block text-brand-dark-brown text-xs font-bold mb-1">3. SSL-/TLS-Verschlüsselung & Datensicherheit</strong>
+                    <p className="text-[11px] text-gray-700">
+                      Diese Seite nutzt aus Sicherheitsgründen und zum Schutz der Übertragung vertraulicher Inhalte (wie Buchungsanfragen oder Zahlungsdaten) eine 256-Bit-SSL- bzw. TLS-Verschlüsselung. Eine verschlüsselte Verbindung erkennen Sie daran, dass die Adresszeile des Browsers von „http://“ auf „https://“ wechselt und an dem Schloss-Symbol in Ihrer Browserzeile.
                     </p>
+                  </div>
+
+                  <div>
+                    <strong className="block text-brand-dark-brown text-xs font-bold mb-1">4. Speicherdauer und Löschung</strong>
+                    <p className="text-[11px] text-gray-700">
+                      Wir speichern Ihre personenbezogenen Daten nur so lange, wie dies für die Durchführung der Reise erforderlich ist oder gesetzliche steuer- und handelsrechtliche Aufbewahrungsfristen (z.B. gem. § 257 HGB, § 147 AO bis zu 10 Jahre) dies vorschreiben. Nach Fristablauf werden die Daten routinemäßig gelöscht oder anonymisiert.
+                    </p>
+                  </div>
+
+                  <div>
+                    <strong className="block text-brand-dark-brown text-xs font-bold mb-1">5. Ihre Rechte als betroffene Person (Art. 15–21 DSGVO)</strong>
+                    <ul className="list-disc pl-4 space-y-1 text-[11px] text-gray-700">
+                      <li><strong>Recht auf Auskunft (Art. 15 DSGVO):</strong> Sie können jederzeit eine Bestätigung und Auskunft über die von uns verarbeiteten Daten verlangen.</li>
+                      <li><strong>Recht auf Berichtigung (Art. 16 DSGVO):</strong> Sie können die unverzügliche Berichtigung unrichtiger Daten verlangen.</li>
+                      <li><strong>Recht auf Löschung („Vergessenwerden“, Art. 17 DSGVO):</strong> Sie können die Löschung Ihrer bei uns gespeicherten Daten verlangen, sofern keine gesetzlichen Aufbewahrungspflichten entgegenstehen.</li>
+                      <li><strong>Recht auf Einschränkung der Verarbeitung (Art. 18 DSGVO):</strong> Sie können die Sperrung Ihrer Daten verlangen.</li>
+                      <li><strong>Recht auf Datenübertragbarkeit (Art. 20 DSGVO):</strong> Sie können Ihre Daten in einem maschinenlesbaren Format exportieren lassen.</li>
+                      <li><strong>Widerspruchsrecht (Art. 21 DSGVO):</strong> Sie können einer Verarbeitung widersprechen.</li>
+                      <li><strong>Beschwerderecht (Art. 77 DSGVO):</strong> Sie haben das Recht, sich bei einer Datenschutz-Aufsichtsbehörde zu beschweren (z.B. Landesbeauftragte für Datenschutz und Informationsfreiheit Nordrhein-Westfalen).</li>
+                    </ul>
+                  </div>
+
+                  <div className="pt-2 text-center text-[10px] text-gray-500 bg-gray-50 p-2.5 rounded-lg border border-brand-gray/60">
+                    Ausführliche und vollständige Datenschutzhinweise finden Sie unter{' '}
+                    <a href="https://artreisen.de/datenschutz/" target="_blank" rel="noopener noreferrer" className="text-brand-blue underline font-bold hover:text-brand-orange">
+                      https://artreisen.de/datenschutz/
+                    </a>.
                   </div>
                 </div>
               )}
 
               {/* AGB / Teilnahmebedingungen content */}
               {legalModal === 'agb' && (
-                <div className="space-y-3">
-                  <p>
-                    Die Teilnahmebedingungen gelten für alle von der Art Reisen GmbH angebotenen Vermittlungen von Reisen, Unterkünften und Transfers nach Fuerteventura.
-                  </p>
+                <div className="space-y-4">
+                  <div className="bg-brand-blue/5 p-3 rounded-lg border border-brand-blue/20 text-[11px] text-brand-blue leading-normal">
+                    📄 <strong>Allgemeine Geschäfts- und Reisebedingungen (AGB):</strong> Reisebüro art reisen GmbH, Mühlenstrasse 21-23, 40822 Mettmann.
+                  </div>
+
                   <div>
-                    <strong className="block text-brand-dark-brown">1. Vertragsabschluss</strong>
-                    <p>
-                      Mit dem Absenden der Reiseanmeldung bieten Sie der Art Reisen GmbH den Abschluss eines Vermittlungsvertrages verbindlich an. Der Vertrag kommt mit der schriftlichen Bestätigung (Insolvenzsicherungsschein) durch uns zustande.
+                    <strong className="block text-brand-dark-brown text-xs font-bold mb-1">1. Geltungsbereich & Vertragsabschluss</strong>
+                    <p className="text-[11px] text-gray-700">
+                      Diese Allgemeinen Reisebedingungen gelten für alle Pauschalreiseverträge und Reisevermittlungen der Reisebüro art reisen GmbH. Mit der Reiseanmeldung bietet der Kunde den Abschluss eines Reisevertrages auf der Grundlage der Ausschreibung verbindlich an. Der Vertrag kommt mit dem Zugang der Buchungsbestätigung und des Sicherungsscheins zustande.
                     </p>
                   </div>
+
                   <div>
-                    <strong className="block text-brand-dark-brown">2. Flexoption (59 Euro)</strong>
-                    <p>
-                      Durch das Zubuchen der Flexoption in Höhe von 59,- Euro pro Zimmer im Formular berechtigen wir Sie, bis 15 Tage vor dem geplanten Abflug kostenlos ohne Angabe von Gründen zu stornieren oder umzubuchen. Bei Stornierung fallen dann lediglich die Servicegebühr von 30,- Euro sowie die Optionsgebühr von 59,- Euro an. Gilt nur bei gleichzeitiger Buchung des Zimmertyps und Flugs.
+                    <strong className="block text-brand-dark-brown text-xs font-bold mb-1">2. Flexoption (59 Euro pro Zimmer)</strong>
+                    <p className="text-[11px] text-gray-700">
+                      Durch das Zubuchen der Flexoption in Höhe von 59,- Euro pro Zimmer können Sie bis 15 Tage vor dem geplanten Reiseantritt ohne Angabe von Gründen kostenlos umbuchen oder stornieren. Im Stornofall fallen lediglich die Servicegebühr von 30,- Euro sowie die Optionsgebühr von 59,- Euro an.
                     </p>
                   </div>
+
                   <div>
-                    <strong className="block text-brand-dark-brown">3. Reiserücktritt & Insolvenzsicherung</strong>
-                    <p>
-                      Wir raten dringend zum Abschluss einer Reiserücktrittskostenversicherung (Allianz). Jeder Kunde erhält mit der Buchungsbestätigung einen Sicherungsschein zur Insolvenzabsicherung gemäß § 651r BGB.
+                    <strong className="block text-brand-dark-brown text-xs font-bold mb-1">3. Insolvenzabsicherung & Reiserücktritt</strong>
+                    <p className="text-[11px] text-gray-700">
+                      Gemäß § 651r BGB sind alle Kundengelder insolvenzversichert. Der gesetzlich vorgeschriebene Sicherungsschein wird mit der Reisebestätigung übermittelt. Wir empfehlen ausdrücklich den Abschluss einer Reiserücktrittskostenversicherung (Allianz).
                     </p>
+                  </div>
+
+                  <div className="pt-2 text-center text-[10px] text-gray-500 bg-gray-50 p-2.5 rounded-lg border border-brand-gray/60">
+                    Den vollständigen und rechtsverbindlichen Text unserer AGB finden Sie unter{' '}
+                    <a href="https://artreisen.de/agb/" target="_blank" rel="noopener noreferrer" className="text-brand-blue underline font-bold hover:text-brand-orange">
+                      https://artreisen.de/agb/
+                    </a>.
                   </div>
                 </div>
               )}
@@ -508,6 +580,60 @@ export default function App() {
               </div>
             </motion.div>
           </div>
+        )}
+      </AnimatePresence>
+
+      {/* Cookie & Storage Consent Banner (DSGVO Konform) */}
+      <AnimatePresence>
+        {!hasCookieConsent && (
+          <motion.div
+            initial={{ y: 100, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 100, opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            className="fixed bottom-4 left-4 right-4 md:left-8 md:right-8 z-40 max-w-4xl mx-auto bg-white/95 backdrop-blur-md rounded-2xl border border-brand-gray/80 shadow-2xl p-4 md:p-5 font-sans text-xs text-brand-dark-text"
+            id="cookie-consent-banner"
+          >
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+              <div className="flex items-start gap-3">
+                <div className="w-9 h-9 rounded-xl bg-brand-orange/10 text-brand-orange flex items-center justify-center shrink-0 mt-0.5">
+                  <Cookie className="w-5 h-5" />
+                </div>
+                <div className="space-y-1">
+                  <h4 className="font-display font-bold text-brand-dark-brown text-sm">
+                    Datenschutz & Speichereinstellungen
+                  </h4>
+                  <p className="text-gray-600 leading-relaxed text-[11px]">
+                    Wir nutzen technisch notwendige lokale Speicherungen (LocalStorage), um Ihren Buchungsfortschritt und Ihre Formulardaten während der Reiseanmeldung DSGVO-konform zwischenzuspeichern. 
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2 shrink-0 self-end md:self-center">
+                <button
+                  type="button"
+                  onClick={() => setLegalModal('datenschutz')}
+                  className="text-gray-500 hover:text-brand-dark-brown underline px-2 py-1 text-[11px] cursor-pointer"
+                >
+                  Datenschutzhinweise
+                </button>
+                <button
+                  type="button"
+                  onClick={() => acceptCookieConsent('essential')}
+                  className="bg-gray-100 hover:bg-gray-200 text-brand-dark-brown font-display font-semibold text-xs px-3.5 py-2 rounded-xl transition-all cursor-pointer"
+                >
+                  Nur Essenzielle
+                </button>
+                <button
+                  type="button"
+                  onClick={() => acceptCookieConsent('all')}
+                  className="bg-brand-blue hover:bg-brand-blue/90 text-white font-display font-bold text-xs px-4 py-2 rounded-xl transition-all cursor-pointer shadow-sm"
+                >
+                  Alle akzeptieren
+                </button>
+              </div>
+            </div>
+          </motion.div>
         )}
       </AnimatePresence>
 

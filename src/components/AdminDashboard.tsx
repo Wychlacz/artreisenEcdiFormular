@@ -3,7 +3,8 @@ import { Registration } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Users, BedDouble, Award, Search, Filter, 
-  Download, Trash2, CheckCircle, X, AlertTriangle, User, Calendar, Plane, ShieldCheck, Heart, Key
+  Download, Trash2, CheckCircle, X, AlertTriangle, User, Calendar, Plane, ShieldCheck, Heart, Key,
+  Eye, EyeOff, Lock, FileText, Sparkles
 } from 'lucide-react';
 import { ROOM_TYPES, DEPARTURE_AIRPORTS } from '../mockData';
 
@@ -11,12 +12,14 @@ interface AdminDashboardProps {
   registrations: Registration[];
   onUpdateStatus: (id: string, newStatus: Registration['status']) => void;
   onDeleteRegistration: (id: string) => void;
+  onAnonymizeRegistration?: (id: string) => void;
 }
 
 export default function AdminDashboard({
   registrations,
   onUpdateStatus,
-  onDeleteRegistration
+  onDeleteRegistration,
+  onAnonymizeRegistration
 }: AdminDashboardProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -24,6 +27,8 @@ export default function AdminDashboard({
   const [airportFilter, setAirportFilter] = useState<string>('all');
   const [selectedReg, setSelectedReg] = useState<Registration | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [confirmAnonymizeId, setConfirmAnonymizeId] = useState<string | null>(null);
+  const [showPaymentDetails, setShowPaymentDetails] = useState(false);
 
   // Passwort ändern Zustand
   const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
@@ -141,9 +146,9 @@ export default function AdminDashboard({
         reg.flexOption,
         reg.zahlungsart || 'Keine Angabe',
         reg.zahlungsart === 'Lastschrift' 
-          ? `IBAN: ${reg.zahlungIban || ''} | Inhaber: ${reg.zahlungKontoinhaber || ''}`
+          ? `IBAN: ${reg.zahlungIban ? (reg.zahlungIban.substring(0, 4) + ' **** **** ' + reg.zahlungIban.slice(-4)) : ''} | Inhaber: ${reg.zahlungKontoinhaber || ''}`
           : reg.zahlungsart === 'Kreditkarte'
-            ? `Inhaber: ${reg.zahlungKreditkarteInhaber || ''} | Nummer: ${reg.zahlungKreditkarteNummer || ''} | Gueltig: ${reg.zahlungKreditkarteGueltig || ''}`
+            ? `Inhaber: ${reg.zahlungKreditkarteInhaber || ''} | Nummer: ${reg.zahlungKreditkarteNummer ? ('**** **** **** ' + reg.zahlungKreditkarteNummer.slice(-4)) : '(Telefonisch)'}`
             : '',
         reg.zusatzVerlaengerung ? 'Ja' : 'Nein',
         reg.zusatzVerlaengerungText || '',
@@ -172,11 +177,58 @@ export default function AdminDashboard({
     document.body.removeChild(link);
   };
 
+  // DSGVO Einzelauskunft Export (Art. 20 DSGVO Datenportabilität)
+  const handleExportSingleDsgvoRecord = (reg: Registration) => {
+    const exportData = {
+      dsgvoHinweis: "Personenbezogener Datensatz gem. Art. 15 / 20 DSGVO (Reisebüro art reisen GmbH)",
+      erstelltAm: new Date().toISOString(),
+      buchung: {
+        id: reg.id,
+        registrierungsDatum: reg.createdAt,
+        status: reg.status,
+        hauptanmelder: {
+          anrede: reg.anrede,
+          vorname: reg.vorname,
+          nachname: reg.nachname,
+          geburtsdatum: reg.geburtsdatum,
+          strasse: reg.strasseHausnummer,
+          plz: reg.plz,
+          ort: reg.ort,
+          land: reg.land,
+          telefon: reg.telefonMobil,
+          email: reg.email
+        },
+        reisedaten: {
+          personenAnzahl: reg.personenAnzahl,
+          mitreisende: reg.mitreisende,
+          abflughafen: reg.abflughafen === 'andere Flughäfen' ? reg.abflughafenAnderer : reg.abflughafen,
+          zimmertyp: reg.zimmertyp,
+          zimmerAufteilung: reg.zimmer
+        },
+        rechtliches: {
+          agbKenntnis: reg.agbKenntnis,
+          pauschalreiseRichtlinien: reg.pauschalreiseRichtlinien,
+          dsgvoEinwilligung: reg.dsgvoEinverstaendnis,
+          flexOption: reg.flexOption
+        }
+      }
+    };
+
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `dsgvo_datenauskunft_${reg.id}.json`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div className="bg-white/45 backdrop-blur-md rounded-2xl border border-brand-gray/80 p-6 shadow-xl" id="admin-dashboard-root">
       
       {/* Header */}
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-8">
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-4">
         <div>
           <h2 className="text-2xl font-display font-bold text-brand-dark-brown flex items-center gap-2">
             <Users className="w-7 h-7 text-brand-blue" />
@@ -204,6 +256,19 @@ export default function AdminDashboard({
             Liste als CSV (für Excel) exportieren
           </button>
         </div>
+      </div>
+
+      {/* DSGVO Compliance Banner */}
+      <div className="bg-emerald-50/80 border border-emerald-200/80 rounded-xl p-3 mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs font-sans text-emerald-900">
+        <div className="flex items-center gap-2.5">
+          <ShieldCheck className="w-5 h-5 text-emerald-600 shrink-0" />
+          <div>
+            <strong className="font-bold">DSGVO-konforme Datenverwaltung:</strong> Personen- und Zahlungsdaten werden ausschließlich zweckgebunden (Art. 6 Abs. 1 lit. b DSGVO) im Rahmen des Reisevertrags verarbeitet.
+          </div>
+        </div>
+        <span className="shrink-0 text-[10px] font-mono font-bold bg-white text-emerald-800 border border-emerald-300 px-2.5 py-1 rounded-full uppercase tracking-wider">
+          Art. 5 & 6 DSGVO aktiv
+        </span>
       </div>
 
       {/* KPI Kacheln */}
@@ -710,39 +775,110 @@ export default function AdminDashboard({
                       </strong>
                     </div>
                     <div>
-                      <span className="text-gray-500 block">Zahlungsart:</span>
-                      <strong className="text-brand-blue uppercase font-sans block">
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-500 block">Zahlungsart:</span>
+                        {(selectedReg.zahlungsart === 'Lastschrift' || selectedReg.zahlungsart === 'Kreditkarte') && (
+                          <button
+                            type="button"
+                            onClick={() => setShowPaymentDetails(!showPaymentDetails)}
+                            className="text-[10px] text-brand-blue hover:text-brand-orange font-bold flex items-center gap-1 cursor-pointer transition-colors"
+                          >
+                            {showPaymentDetails ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+                            {showPaymentDetails ? 'Maskieren' : 'Entschlüsseln'}
+                          </button>
+                        )}
+                      </div>
+                      <strong className="text-brand-blue uppercase font-sans block mt-0.5">
                         {selectedReg.zahlungsart || 'Keine Angabe'}
                       </strong>
                       {selectedReg.zahlungsart === 'Lastschrift' && (
-                        <div className="text-[10px] text-gray-600 bg-white p-1 rounded border border-brand-gray mt-1 font-mono">
-                          <div>Inh: {selectedReg.zahlungKontoinhaber || '–'}</div>
-                          <div>IBAN: {selectedReg.zahlungIban || '–'}</div>
+                        <div className="text-[10px] text-gray-600 bg-white p-2 rounded-lg border border-brand-gray mt-1 font-mono space-y-0.5">
+                          <div>Inhaber: <span className="font-bold text-brand-dark-brown">{selectedReg.zahlungKontoinhaber || '–'}</span></div>
+                          <div>
+                            IBAN: <span className="font-bold text-brand-dark-brown">
+                              {showPaymentDetails 
+                                ? (selectedReg.zahlungIban || '–')
+                                : (selectedReg.zahlungIban ? `${selectedReg.zahlungIban.substring(0, 4)} •••• •••• •••• ${selectedReg.zahlungIban.slice(-4)}` : '–')}
+                            </span>
+                          </div>
                         </div>
                       )}
                       {selectedReg.zahlungsart === 'Kreditkarte' && (
-                        <div className="text-[10px] text-gray-600 bg-white p-1 rounded border border-brand-gray mt-1">
-                          <div>Inh: {selectedReg.zahlungKreditkarteInhaber || '–'}</div>
-                          <div className="font-mono">CC: {selectedReg.zahlungKreditkarteNummer || '–'}</div>
-                          <div>Gültig: {selectedReg.zahlungKreditkarteGueltig || '–'}</div>
+                        <div className="text-[10px] text-gray-600 bg-white p-2 rounded-lg border border-brand-gray mt-1 font-mono space-y-0.5">
+                          <div>Inhaber: <span className="font-bold text-brand-dark-brown">{selectedReg.zahlungKreditkarteInhaber || '–'}</span></div>
+                          <div>
+                            Nummer: <span className="font-bold text-brand-dark-brown">
+                              {selectedReg.zahlungKreditkarteNummer ? (
+                                showPaymentDetails 
+                                  ? selectedReg.zahlungKreditkarteNummer 
+                                  : `•••• •••• •••• ${selectedReg.zahlungKreditkarteNummer.slice(-4)}`
+                              ) : '(Wird telefonisch durchgegeben)'}
+                            </span>
+                          </div>
+                          <div>Gültig: <span className="font-bold text-brand-dark-brown">{selectedReg.zahlungKreditkarteGueltig || '–'}</span></div>
                         </div>
                       )}
                     </div>
-                    <div className="col-span-2 pt-1 mt-1 border-t border-brand-gray/40 text-emerald-800 flex items-center gap-1 font-semibold">
-                      <CheckCircle className="w-3.5 h-3.5 text-emerald-600" /> DSGVO-Zustimmung liegt vor.
+                    <div className="col-span-2 pt-1.5 mt-1 border-t border-brand-gray/40 text-emerald-800 flex items-center justify-between text-[11px] font-semibold">
+                      <span className="flex items-center gap-1">
+                        <CheckCircle className="w-3.5 h-3.5 text-emerald-600" /> DSGVO-Einwilligung erteilt
+                      </span>
+                      {selectedReg.isAnonymized && (
+                        <span className="text-[9px] bg-gray-200 text-gray-700 px-2 py-0.5 rounded font-mono font-bold">
+                          Sensible Daten anonymisiert
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>
 
               </div>
 
-              <div className="mt-6 pt-4 border-t border-brand-gray flex justify-end">
+              {/* Modal Footer Actions */}
+              <div className="mt-6 pt-4 border-t border-brand-gray flex flex-wrap items-center justify-between gap-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleExportSingleDsgvoRecord(selectedReg)}
+                    className="inline-flex items-center gap-1.5 bg-gray-100 hover:bg-gray-200 text-brand-dark-brown font-display font-semibold text-[11px] px-3 py-2 rounded-xl transition-all cursor-pointer"
+                    title="Exportiert diesen Datensatz als strukturierte JSON nach Art. 20 DSGVO"
+                  >
+                    <Download className="w-3.5 h-3.5 text-brand-blue" />
+                    DSGVO-Datenauskunft (JSON)
+                  </button>
+
+                  {onAnonymizeRegistration && !selectedReg.isAnonymized && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (window.confirm(`Möchten Sie die sensiblen Zahlungs- und Geburtsdaten für Buchung ${selectedReg.id} nach Abschluss unwiderruflich anonymisieren (Art. 17 / Art. 5 DSGVO)?`)) {
+                          onAnonymizeRegistration(selectedReg.id);
+                          setSelectedReg(prev => prev ? {
+                            ...prev,
+                            isAnonymized: true,
+                            zahlungIban: '',
+                            zahlungKreditkarteNummer: '',
+                            zahlungKreditkarteGueltig: '',
+                            zahlungKontoinhaber: '',
+                            zahlungKreditkarteInhaber: ''
+                          } : null);
+                        }
+                      }}
+                      className="inline-flex items-center gap-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200/80 font-display font-semibold text-[11px] px-3 py-2 rounded-xl transition-all cursor-pointer"
+                      title="Anonymisiert Zahlungs- und Identitätsdaten gemäß DSGVO Datensparsamkeit"
+                    >
+                      <Lock className="w-3.5 h-3.5 text-amber-600" />
+                      Zahlungsdaten anonymisieren
+                    </button>
+                  )}
+                </div>
+
                 <button
                   type="button"
                   onClick={() => setSelectedReg(null)}
-                  className="bg-brand-orange hover:bg-brand-orange-yellow text-white font-display font-bold text-xs px-5 py-2.5 rounded-xl cursor-pointer"
+                  className="bg-brand-orange hover:bg-brand-orange-yellow text-white font-display font-bold text-xs px-5 py-2.5 rounded-xl cursor-pointer ml-auto shadow-sm"
                 >
-                  Patientenakte schließen
+                  Buchungsdetails schließen
                 </button>
               </div>
 

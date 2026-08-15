@@ -222,7 +222,7 @@ export default function WorkshopDetails({ onSwitchToBooking }: WorkshopDetailsPr
           </div>
 
           <div className="mt-4 pt-4 border-t border-brand-gray flex items-center justify-between text-xs font-sans text-brand-blue" id="art-reisen-footer">
-            <span className="font-semibold">📞 Fragen zur Buchung? +49 (0) 89 123456-0</span>
+            <span className="font-semibold">📞 Fragen zur Buchung? 02104 75711</span>
             <span className="flex items-center gap-0.5 hover:underline cursor-pointer">art-reisen.de <ExternalLink className="w-3 h-3" /></span>
           </div>
         </div>

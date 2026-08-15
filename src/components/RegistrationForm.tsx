@@ -1246,7 +1246,7 @@ export default function RegistrationForm({ onSubmit, onShowLegal, onShowAdmin }:
               {/* 1. AGBs vom Veranstalter */}
               <div className="bg-white p-4 rounded-xl border border-brand-gray space-y-3">
                 <div className="block text-xs font-display font-black text-brand-dark-brown uppercase tracking-wider leading-relaxed">
-                  1. Wir haben die <a href="https://www.aldiana.com/dam/jcr:66256be8-71f3-49ba-847f-66a79a1ca06c/ALDIANA_AGBs_Sommer_2026.2026-01-13-11-07-21.pdf" target="_blank" rel="noopener noreferrer" className="text-brand-blue underline hover:text-brand-orange transition-colors">AGBs des Veranstalters</a> zur Kenntnis genommen <span className="text-brand-orange">*</span>
+                  1. Wir haben die <a href="https://artreisen.de/agb/" target="_blank" rel="noopener noreferrer" className="text-brand-blue underline hover:text-brand-orange transition-colors font-extrabold">AGBs des Reiseveranstalters (Reisebüro art reisen GmbH)</a> zur Kenntnis genommen <span className="text-brand-orange">*</span>
                 </div>
                 <div className="flex gap-4">
                   {['Ja', 'Nein'].map(opt => (
@@ -1593,21 +1593,68 @@ export default function RegistrationForm({ onSubmit, onShowLegal, onShowAdmin }:
               </div>
 
               {/* DSGVO Einwilligung */}
-              <div className="p-4 bg-brand-light-bg/60 border border-brand-gray rounded-xl space-y-2">
+              <div className="p-4 bg-brand-light-bg/70 border border-brand-gray rounded-xl space-y-3">
+                <div className="flex items-center justify-between gap-2 border-b border-brand-gray/60 pb-2">
+                  <div className="flex items-center gap-1.5 text-xs font-display font-bold text-brand-dark-brown">
+                    <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <span>Datenschutz & DSGVO-Einwilligung</span>
+                  </div>
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100/80 text-emerald-800 border border-emerald-300/60">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse" />
+                    256-Bit SSL-Verschlüsselt
+                  </span>
+                </div>
+
                 <label className="inline-flex items-start gap-3 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={formData.dsgvoEinverstaendnis}
-                    onChange={(e) => updateField('dsgvoEinverstaendnis', e.target.checked)}
+                    onChange={(e) => {
+                      updateField('dsgvoEinverstaendnis', e.target.checked);
+                      if (errors.dsgvoEinverstaendnis) {
+                        setErrors(prev => {
+                          const c = { ...prev };
+                          delete c.dsgvoEinverstaendnis;
+                          return c;
+                        });
+                      }
+                    }}
                     id="checkbox-dsgvo"
-                    className="mt-1 border-brand-gray text-brand-blue rounded-xs"
+                    className="mt-1 h-4 w-4 border-brand-gray text-brand-blue rounded-xs focus:ring-brand-blue/30"
                   />
-                  <span className="font-sans text-xs text-brand-dark-text leading-relaxed">
-                    <strong>DSGVO-Einverständnis *</strong><br />
-                    Ich willige ein, dass diese Website meine übermittelten Informationen speichert, sodass meine Anfrage beantwortet werden kann. Inhaberschutz und sichere Speicherung gewährleistet.
-                  </span>
+                  <div className="font-sans text-xs text-brand-dark-text leading-relaxed">
+                    <span className="font-bold text-brand-dark-brown">
+                      Einwilligung zur Datenverarbeitung nach Art. 6 Abs. 1 lit. b und lit. a DSGVO <span className="text-brand-orange">*</span>
+                    </span>
+                    <p className="text-[11px] text-gray-600 mt-1 leading-normal">
+                      Ich willige ein, dass meine hier angegebenen personenbezogenen Daten (inkl. Namen, Geburtsdaten, Kontaktdaten und ggf. Zahlungsdaten) von der <strong>Reisebüro art reisen GmbH</strong> zur Bearbeitung meiner Reiseanmeldung, Buchungsdurchführung bei Leistungsträgern (Hotels, Fluggesellschaften auf Fuerteventura) und zur Kundenbetreuung verarbeitet und gespeichert werden.
+                    </p>
+                    <p className="text-[10px] text-gray-500 mt-1.5">
+                      🔒 <strong>Widerruf & Rechte:</strong> Sie können diese Einwilligung jederzeit mit Wirkung für die Zukunft formlos per E-Mail an <a href="mailto:info@artreisen.de" className="underline text-brand-blue font-semibold">info@artreisen.de</a> widerrufen. Ausführliche Informationen zu Ihren Betroffenenrechten und zur Speicherdauer finden Sie in unserer{' '}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          if (onShowLegal) {
+                            onShowLegal('datenschutz');
+                          } else {
+                            window.open('https://artreisen.de/datenschutz/', '_blank');
+                          }
+                        }}
+                        className="underline text-brand-blue font-bold cursor-pointer hover:text-brand-orange transition-colors"
+                      >
+                        Datenschutzerklärung (DSGVO)
+                      </button>.
+                    </p>
+                  </div>
                 </label>
-                {errors.dsgvoEinverstaendnis && <p className="text-xs text-rose-600 font-semibold pl-6 font-sans">{errors.dsgvoEinverstaendnis}</p>}
+                {errors.dsgvoEinverstaendnis && (
+                  <p className="text-xs text-rose-600 font-semibold pl-7 font-sans flex items-center gap-1">
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                    {errors.dsgvoEinverstaendnis}
+                  </p>
+                )}
               </div>
 
             </div>
@@ -1656,11 +1703,32 @@ export default function RegistrationForm({ onSubmit, onShowLegal, onShowAdmin }:
 
       {/* Small Inline legal footer since main page footer is gone */}
       <div className="bg-gray-50 border-t border-brand-gray/60 px-6 py-4 flex flex-col md:flex-row justify-between items-center gap-3 text-[10px] text-gray-400 font-sans">
-        <span>© {new Date().getFullYear()} Reisebüro art reisen GmbH, Mettmann. Alle Rechte vorbehalten.</span>
-        <div className="flex flex-wrap justify-center gap-3">
-          <a href="https://artreisen.de/impressum/" target="_blank" rel="noopener noreferrer" className="hover:underline font-bold text-gray-500">Impressum</a>
+        <span>© {new Date().getFullYear()} Reisebüro art reisen GmbH. Alle Rechte vorbehalten.</span>
+        <div className="flex flex-wrap justify-center items-center gap-3">
+          <button 
+            type="button" 
+            onClick={() => onShowLegal ? onShowLegal('impressum') : window.open('https://artreisen.de/impressum/', '_blank')}
+            className="hover:underline font-bold text-gray-500 cursor-pointer"
+          >
+            Impressum
+          </button>
           <span>•</span>
-          <a href="https://artreisen.de/datenschutz/" target="_blank" rel="noopener noreferrer" className="hover:underline font-bold text-gray-500">Datenschutz</a>
+          <button 
+            type="button" 
+            onClick={() => onShowLegal ? onShowLegal('datenschutz') : window.open('https://artreisen.de/datenschutz/', '_blank')}
+            className="hover:underline font-bold text-gray-500 cursor-pointer flex items-center gap-1"
+          >
+            <ShieldCheck className="w-3 h-3 text-emerald-600" />
+            Datenschutz (DSGVO)
+          </button>
+          <span>•</span>
+          <button 
+            type="button" 
+            onClick={() => onShowLegal ? onShowLegal('agb') : null}
+            className="hover:underline font-bold text-gray-500 cursor-pointer"
+          >
+            AGB
+          </button>
           {onShowAdmin && (
             <>
               <span>•</span>

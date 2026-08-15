@@ -82,4 +82,5 @@ export interface Registration {
   zusatzTransferAuswahlMietwagen?: boolean;
   zusatzVersicherungAngebot: boolean;
   zusatzRailAndFly: boolean;
+  isAnonymized?: boolean;
 }
