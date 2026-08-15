@@ -381,11 +381,11 @@ export default function App() {
 
                   <form onSubmit={handleUnlockAdmin} className="space-y-4" id="admin-login-form">
                     <div className="space-y-1.5">
-                      <label htmlFor="admin-pass" className="block text-xs font-display font-bold text-brand-dark-brown">Zugangscode eingeben</label>
+                      <label htmlFor="admin-pass" className="block text-xs font-display font-bold text-brand-dark-brown">Kennwort</label>
                       <input
                         type="password"
                         id="admin-pass"
-                        placeholder='Kennwort (Standard: "admin")'
+                        placeholder="Kennwort"
                         value={adminPassword}
                         onChange={(e) => setAdminPassword(e.target.value)}
                         className="w-full px-3 py-2 text-sm border border-brand-gray rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-blue/30 font-sans bg-brand-light-bg/40"
@@ -400,14 +400,6 @@ export default function App() {
                         className="w-full bg-brand-dark-green hover:bg-brand-dark-green/90 text-white font-display font-bold text-xs py-2.5 rounded-xl transition-all cursor-pointer shadow-md text-center"
                       >
                         Portal freischalten
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setIsAdminUnlocked(true)}
-                        id="bypass-login-btn"
-                        className="w-full text-brand-blue hover:text-brand-blue/80 font-sans text-[11px] underline cursor-pointer text-center"
-                      >
-                        (Entwickler-Direktzugriff ohne Passwort ermöglichen)
                       </button>
                     </div>
                   </form>
@@ -479,47 +471,58 @@ export default function App() {
               {legalModal === 'datenschutz' && (
                 <div className="space-y-4">
                   <div className="bg-emerald-50 p-3 rounded-lg border border-emerald-200 text-[11px] text-emerald-900 leading-normal">
-                    🛡️ <strong>Verantwortliche Stelle:</strong> Reisebüro art reisen GmbH, Mühlenstrasse 21-23, 40822 Mettmann, E-Mail: <a href="mailto:info@artreisen.de" className="text-brand-blue underline font-bold">info@artreisen.de</a>. Wir verarbeiten Ihre Daten streng im Einklang mit der EU-Datenschutz-Grundverordnung (DSGVO) und dem Bundesdatenschutzgesetz (BDSG).
+                    🛡️ <strong>Verantwortliche Stelle:</strong> Reisebüro art reisen GmbH, Mühlenstrasse 21-23, 40822 Mettmann, E-Mail: <a href="mailto:info@artreisen.de" className="text-brand-blue underline font-bold">info@artreisen.de</a>, Tel. 02104 75711. Wir verarbeiten Ihre Daten streng im Einklang mit der EU-Datenschutz-Grundverordnung (DSGVO) und dem Bundesdatenschutzgesetz (BDSG).
                   </div>
 
                   <div>
-                    <strong className="block text-brand-dark-brown text-xs font-bold mb-1">1. Zweck und Rechtsgrundlage der Datenverarbeitung</strong>
+                    <strong className="block text-brand-dark-brown text-xs font-bold mb-1">1. Zweck und Rechtsgrundlage der Datenverarbeitung (Art. 13 Abs. 1 lit. c DSGVO)</strong>
                     <p className="text-[11px] text-gray-700">
-                      Die von Ihnen im Buchungsformular eingegebenen personenbezogenen Daten (Name, Vorname, Geburtsdatum, Anschrift, E-Mail, Telefonnummer, Zimmerpräferenzen sowie optionale Zahlungsdaten) werden primär zur Erfüllung des Reisevermittlungs- und Beförderungsvertrags verarbeitet (<strong>Art. 6 Abs. 1 lit. b DSGVO</strong>). Soweit Sie freiwillige Zusatzangaben oder Werbeeinwilligungen erteilen, erfolgt dies auf Grundlage Ihrer ausdrücklichen Einwilligung (<strong>Art. 6 Abs. 1 lit. a DSGVO</strong>).
+                      Die von Ihnen im Buchungsformular eingegebenen personenbezogenen Daten (Name, Vorname, Geburtsdatum, Anschrift, E-Mail, Telefonnummer, Zimmerpräferenzen sowie ggf. Zahlungsdaten) werden zur Bearbeitung Ihrer Buchungsanfrage und zur Erfüllung des Reisevermittlungs- und Beförderungsvertrags verarbeitet (<strong>Art. 6 Abs. 1 lit. b DSGVO</strong> – Vertragserfüllung bzw. vorvertragliche Maßnahmen). Soweit Sie freiwillige Zusatzangaben machen, erfolgt dies auf Basis Ihrer Einwilligung (<strong>Art. 6 Abs. 1 lit. a DSGVO</strong>).
                     </p>
                   </div>
 
                   <div>
-                    <strong className="block text-brand-dark-brown text-xs font-bold mb-1">2. Weitergabe von Daten an Leistungsträger</strong>
-                    <p className="text-[11px] text-gray-700">
-                      Zur ordnungsgemäßen Abwicklung Ihrer Fuerteventura-Reise werden erforderliche Daten an die beteiligten Leistungsträger übermittelt: die jeweilige Fluggesellschaft (z.B. Condor, Eurowings, TUI fly) zur Ausstellung der Flugtickets, das Tagungshotel (Hotel R2 Bahia Playa Design Hotel & Spa) zur Zimmerreservierung sowie ggf. Transferdienstleister oder den Insolvenzschutz-Versicherer. Eine Übermittlung an unbefugte Dritte oder zu Werbezwecken findet nicht statt.
+                    <strong className="block text-brand-dark-brown text-xs font-bold mb-1">2. Empfänger der Daten & Auftragsverarbeitung (Art. 13 Abs. 1 lit. e DSGVO)</strong>
+                    <p className="text-[11px] text-gray-700 mb-1.5">
+                      Ihre Daten werden vertraulich behandelt und ausschließlich an folgende Empfängerkategorien übermittelt:
                     </p>
-                  </div>
-
-                  <div>
-                    <strong className="block text-brand-dark-brown text-xs font-bold mb-1">3. SSL-/TLS-Verschlüsselung & Datensicherheit</strong>
-                    <p className="text-[11px] text-gray-700">
-                      Diese Seite nutzt aus Sicherheitsgründen und zum Schutz der Übertragung vertraulicher Inhalte (wie Buchungsanfragen oder Zahlungsdaten) eine 256-Bit-SSL- bzw. TLS-Verschlüsselung. Eine verschlüsselte Verbindung erkennen Sie daran, dass die Adresszeile des Browsers von „http://“ auf „https://“ wechselt und an dem Schloss-Symbol in Ihrer Browserzeile.
-                    </p>
-                  </div>
-
-                  <div>
-                    <strong className="block text-brand-dark-brown text-xs font-bold mb-1">4. Speicherdauer und Löschung</strong>
-                    <p className="text-[11px] text-gray-700">
-                      Wir speichern Ihre personenbezogenen Daten nur so lange, wie dies für die Durchführung der Reise erforderlich ist oder gesetzliche steuer- und handelsrechtliche Aufbewahrungsfristen (z.B. gem. § 257 HGB, § 147 AO bis zu 10 Jahre) dies vorschreiben. Nach Fristablauf werden die Daten routinemäßig gelöscht oder anonymisiert.
-                    </p>
-                  </div>
-
-                  <div>
-                    <strong className="block text-brand-dark-brown text-xs font-bold mb-1">5. Ihre Rechte als betroffene Person (Art. 15–21 DSGVO)</strong>
                     <ul className="list-disc pl-4 space-y-1 text-[11px] text-gray-700">
-                      <li><strong>Recht auf Auskunft (Art. 15 DSGVO):</strong> Sie können jederzeit eine Bestätigung und Auskunft über die von uns verarbeiteten Daten verlangen.</li>
-                      <li><strong>Recht auf Berichtigung (Art. 16 DSGVO):</strong> Sie können die unverzügliche Berichtigung unrichtiger Daten verlangen.</li>
-                      <li><strong>Recht auf Löschung („Vergessenwerden“, Art. 17 DSGVO):</strong> Sie können die Löschung Ihrer bei uns gespeicherten Daten verlangen, sofern keine gesetzlichen Aufbewahrungspflichten entgegenstehen.</li>
-                      <li><strong>Recht auf Einschränkung der Verarbeitung (Art. 18 DSGVO):</strong> Sie können die Sperrung Ihrer Daten verlangen.</li>
-                      <li><strong>Recht auf Datenübertragbarkeit (Art. 20 DSGVO):</strong> Sie können Ihre Daten in einem maschinenlesbaren Format exportieren lassen.</li>
-                      <li><strong>Widerspruchsrecht (Art. 21 DSGVO):</strong> Sie können einer Verarbeitung widersprechen.</li>
-                      <li><strong>Beschwerderecht (Art. 77 DSGVO):</strong> Sie haben das Recht, sich bei einer Datenschutz-Aufsichtsbehörde zu beschweren (z.B. Landesbeauftragte für Datenschutz und Informationsfreiheit Nordrhein-Westfalen).</li>
+                      <li><strong>Make.com (Celonis Inc. / Integromat s.r.o.):</strong> Zur technischen Prozessautomatisierung und sicheren Weiterleitung Ihrer Buchungsanfrage per E-Mail an die art reisen GmbH nutzen wir die Plattform Make.com als <strong>Auftragsverarbeiter</strong> auf Basis eines rechtskonformen Auftragsverarbeitungsvertrags (AVV nach Art. 28 DSGVO).</li>
+                      <li><strong>Reise-Leistungsträger:</strong> Beteiligte Leistungsträger (Fluggesellschaften zur Ticketausstellung, Beherbergungsbetriebe/Hotels zur Zimmerreservierung sowie ggf. Transferdienstleister und Insolvenzversicherer).</li>
+                    </ul>
+                  </div>
+
+                  <div>
+                    <strong className="block text-brand-dark-brown text-xs font-bold mb-1">3. Speicherdauer, Löschfristen & Admin-Bereich (Art. 13 Abs. 2 lit. a DSGVO)</strong>
+                    <p className="text-[11px] text-gray-700">
+                      Ihre operativen Buchungsdaten im internen System werden <strong>3 Monate nach Abschluss der Reise</strong> routinemäßig gelöscht bzw. anonymisiert, sofern keine offenen Ansprüche mehr bestehen. Gesetzliche steuer- und handelsrechtliche Aufbewahrungspflichten (z.B. Buchungsbelege gem. § 257 HGB, § 147 AO bis zu 10 Jahre) bleiben unberührt. Der interne Administrationsbereich ist passwortgeschützt und der Zugriff auf autorisierte Mitarbeiter der art reisen GmbH beschränkt.
+                    </p>
+                  </div>
+
+                  <div>
+                    <strong className="block text-brand-dark-brown text-xs font-bold mb-1">4. Drittdaten von Mitreisenden</strong>
+                    <p className="text-[11px] text-gray-700">
+                      Trägt der Hauptanmelder Daten mitreisender Personen (wie Name und Geburtsdatum) ein, bestätigt dieser im Buchungsformular, dass er hierzu im Auftrag der Mitreisenden berechtigt ist und diese über den Datenschutz informiert wurden.
+                    </p>
+                  </div>
+
+                  <div>
+                    <strong className="block text-brand-dark-brown text-xs font-bold mb-1">5. SSL-/TLS-Verschlüsselung & Datensicherheit</strong>
+                    <p className="text-[11px] text-gray-700">
+                      Diese Seite nutzt aus Sicherheitsgründen eine 256-Bit-SSL- bzw. TLS-Verschlüsselung bei der Übertragung Ihrer Eingaben.
+                    </p>
+                  </div>
+
+                  <div>
+                    <strong className="block text-brand-dark-brown text-xs font-bold mb-1">6. Ihre Rechte als betroffene Person (Art. 15–21 DSGVO)</strong>
+                    <ul className="list-disc pl-4 space-y-1 text-[11px] text-gray-700">
+                      <li><strong>Recht auf Auskunft (Art. 15 DSGVO):</strong> Sie können jederzeit Auskunft über die verarbeiteten Daten verlangen.</li>
+                      <li><strong>Recht auf Berichtigung (Art. 16 DSGVO):</strong> Sie können die Berichtigung unrichtiger Daten verlangen.</li>
+                      <li><strong>Recht auf Löschung („Vergessenwerden“, Art. 17 DSGVO):</strong> Sie können die Löschung Ihrer Daten verlangen.</li>
+                      <li><strong>Recht auf Einschränkung der Verarbeitung (Art. 18 DSGVO):</strong> Sie können die Einschränkung der Verarbeitung verlangen.</li>
+                      <li><strong>Recht auf Datenübertragbarkeit (Art. 20 DSGVO):</strong> Sie können die Herausgabe der Daten verlangen.</li>
+                      <li><strong>Widerspruchsrecht & Widerruf (Art. 21, Art. 7 Abs. 3 DSGVO):</strong> Einwilligungen können jederzeit mit Wirkung für die Zukunft per Mail an <a href="mailto:info@artreisen.de" className="underline text-brand-blue font-semibold">info@artreisen.de</a> widerrufen werden.</li>
+                      <li><strong>Beschwerderecht (Art. 77 DSGVO):</strong> Beschwerderecht bei der zuständigen Aufsichtsbehörde (LDI NRW).</li>
                     </ul>
                   </div>
 

@@ -69,6 +69,7 @@ export interface Registration {
   zahlungKreditkarteGueltig?: string;
   zahlungKreditkarteInhaber?: string;
   dsgvoEinverstaendnis: boolean;
+  dsgvoDrittdatenEinverstaendnis?: boolean;
   
   // Zusatzleistungen (Absenden und Zusatzleistungen)
   zusatzVerlaengerung: boolean;
