@@ -148,7 +148,7 @@ export default function AdminDashboard({
         reg.zahlungsart === 'Lastschrift' 
           ? `IBAN: ${reg.zahlungIban ? (reg.zahlungIban.substring(0, 4) + ' **** **** ' + reg.zahlungIban.slice(-4)) : ''} | Inhaber: ${reg.zahlungKontoinhaber || ''}`
           : reg.zahlungsart === 'Kreditkarte'
-            ? `Inhaber: ${reg.zahlungKreditkarteInhaber || ''} | Nummer: ${reg.zahlungKreditkarteNummer ? ('**** **** **** ' + reg.zahlungKreditkarteNummer.slice(-4)) : '(Telefonisch)'}`
+            ? 'Telefonische Übergabe an art reisen GmbH (PCI-DSS konform)'
             : '',
         reg.zusatzVerlaengerung ? 'Ja' : 'Nein',
         reg.zusatzVerlaengerungText || '',
@@ -804,24 +804,15 @@ export default function AdminDashboard({
                         </div>
                       )}
                       {selectedReg.zahlungsart === 'Kreditkarte' && (
-                        <div className="text-[10px] text-gray-600 bg-white p-2 rounded-lg border border-brand-gray mt-1 font-mono space-y-0.5">
-                          <div>Inhaber: <span className="font-bold text-brand-dark-brown">{selectedReg.zahlungKreditkarteInhaber || '–'}</span></div>
-                          <div>
-                            Nummer: <span className="font-bold text-brand-dark-brown">
-                              {selectedReg.zahlungKreditkarteNummer ? (
-                                showPaymentDetails 
-                                  ? selectedReg.zahlungKreditkarteNummer 
-                                  : `•••• •••• •••• ${selectedReg.zahlungKreditkarteNummer.slice(-4)}`
-                              ) : '(Wird telefonisch durchgegeben)'}
-                            </span>
-                          </div>
-                          <div>Gültig: <span className="font-bold text-brand-dark-brown">{selectedReg.zahlungKreditkarteGueltig || '–'}</span></div>
+                        <div className="text-[10px] text-amber-900 bg-amber-50 p-2 rounded-lg border border-amber-200 mt-1 font-sans space-y-0.5">
+                          <div className="font-bold flex items-center gap-1">💳 PCI-DSS konform:</div>
+                          <div className="text-gray-600">Übergabe telefonisch (02104 75711) oder per zertifiziertem Zahlungslink</div>
                         </div>
                       )}
                     </div>
                     <div className="col-span-2 pt-1.5 mt-1 border-t border-brand-gray/40 text-emerald-800 flex items-center justify-between text-[11px] font-semibold">
                       <span className="flex items-center gap-1">
-                        <CheckCircle className="w-3.5 h-3.5 text-emerald-600" /> DSGVO-Einwilligung erteilt
+                        <CheckCircle className="w-3.5 h-3.5 text-emerald-600" /> DSGVO / Vertragserfüllung (Art. 6 Abs. 1 lit. b) zur Kenntnis genommen
                       </span>
                       {selectedReg.isAnonymized && (
                         <span className="text-[9px] bg-gray-200 text-gray-700 px-2 py-0.5 rounded font-mono font-bold">

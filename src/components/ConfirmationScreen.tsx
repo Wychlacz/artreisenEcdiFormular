@@ -76,8 +76,8 @@ Pauschalreiserichtlinien informiert:    ${registration.pauschalreiseRichtlinien}
 Rücktrittskostenversicherung Info benötigt:                                    ${registration.versicherungInfoBenoetigt}
 Flexoption abschließen (59,- €):         ${registration.flexOption}
 Gewählte Zahlungsart:                    ${registration.zahlungsart || 'Keine Angabe'}
-${registration.zahlungsart === 'Lastschrift' ? `* IBAN: ${registration.zahlungIban || 'Keine Angabe'}\n* Kontoinhaber: ${registration.zahlungKontoinhaber || 'Keine Angabe'}` : ''}${registration.zahlungsart === 'Kreditkarte' ? `* Karteninhaber: ${registration.zahlungKreditkarteInhaber || 'Keine Angabe'}\n* Kartennummer: ${registration.zahlungKreditkarteNummer ? 'xxxxxxxxxxxx' + registration.zahlungKreditkarteNummer.slice(-4) : '(Wird telefonisch durchgegeben)'}` : ''}
-DSGVO-Einverständnis erteilt:           Ja
+${registration.zahlungsart === 'Lastschrift' ? `* IBAN: ${registration.zahlungIban || 'Keine Angabe'}\n* Kontoinhaber: ${registration.zahlungKontoinhaber || 'Keine Angabe'}` : ''}${registration.zahlungsart === 'Kreditkarte' ? `* Zahlungsabwicklung: Kreditkartendaten werden telefonisch an art reisen übergeben (02104 75711, PCI-DSS konform). Keine Speicherung im Webformular.` : ''}
+Kenntnisnahme zur Vertragserfüllung (Art. 6 Abs. 1 lit. b DSGVO) bestätigt: Ja
 
 Vielen Dank für Ihr Vertrauen in über 30 Jahre Erfahrung!
 Reisebüro art reisen GmbH
@@ -108,7 +108,7 @@ Hier ist eine Übersicht Ihrer Reiseanmeldung:
 ${registration.zimmer && registration.zimmer.length > 0 ? registration.zimmer.map((z, idx) => `  * Zimmer ${idx+1}: ${z.zimmertyp} (${z.gaesteAnzahl} Person(en))`).join('\n') : `  * ${registration.zimmertyp}`}
 - Flexoption (59 Euro): ${registration.flexOption}
 - Gewählte Zahlungsart: ${registration.zahlungsart || 'Keine Angabe'}
-${registration.zahlungsart === 'Lastschrift' ? `  * IBAN: ${registration.zahlungIban || 'Keine Angabe'}\n  * Kontoinhaber: ${registration.zahlungKontoinhaber || 'Keine Angabe'}\n` : ''}${registration.zahlungsart === 'Kreditkarte' ? `  * Karteninhaber: ${registration.zahlungKreditkarteInhaber || 'Keine Angabe'}\n  * Kartennummer: ${registration.zahlungKreditkarteNummer ? 'xxxxxxxxxxxx' + registration.zahlungKreditkarteNummer.slice(-4) : '(Wird telefonisch durchgegeben)'}\n` : ''}- Gewünschte Zusatzleistungen:
+${registration.zahlungsart === 'Lastschrift' ? `  * IBAN: ${registration.zahlungIban || 'Keine Angabe'}\n  * Kontoinhaber: ${registration.zahlungKontoinhaber || 'Keine Angabe'}\n` : ''}${registration.zahlungsart === 'Kreditkarte' ? `  * Zahlungsabwicklung: Kreditkartendaten werden telefonisch an art reisen übermittelt (02104 75711, PCI-DSS konform). Keine Speicherung im Webformular.\n` : ''}- Gewünschte Zusatzleistungen:
   ${registration.zusatzVerlaengerung ? `* Verlängerungswunsch: ${registration.zusatzVerlaengerungText}` : ''}
   ${registration.zusatzBeachten ? `* Wichtige Hinweise: ${registration.zusatzBeachtenText}` : ''}
   ${registration.zusatzSitzplatz ? `* Sitzplatz: ${registration.zusatzSitzplatzText}` : ''}
@@ -315,7 +315,7 @@ Inhabergeführt seit über 30 Jahren.
                   <Check className="w-3.5 h-3.5 shrink-0 bg-emerald-100 rounded-full p-0.5" /> Pauschalreiseinfo erfolgt
                 </p>
                 <p className="flex items-center gap-1 text-emerald-700 font-semibold">
-                  <Check className="w-3.5 h-3.5 shrink-0 bg-emerald-100 rounded-full p-0.5" /> DSGVO zugestimmt
+                  <Check className="w-3.5 h-3.5 shrink-0 bg-emerald-100 rounded-full p-0.5" /> DSGVO / Vertragserfüllung zur Kenntnis genommen
                 </p>
                 <div className="mt-2.5 pt-2 border-t border-brand-gray/50 font-sans text-[10px] text-brand-dark-brown space-y-1">
                   <span className="text-gray-400 block font-medium">Gewählte Zahlungsart:</span>
@@ -327,10 +327,13 @@ Inhabergeführt seit über 30 Jahren.
                     </div>
                   )}
                   {registration.zahlungsart === 'Kreditkarte' && (
-                    <div className="bg-gray-50 p-1.5 rounded border border-brand-gray text-[9px] text-gray-600 space-y-0.5 mt-1">
-                      <div>Inhaber: {registration.zahlungKreditkarteInhaber || '–'}</div>
-                      <div className="font-mono">Nummer: {registration.zahlungKreditkarteNummer ? '•••• •••• •••• ' + registration.zahlungKreditkarteNummer.slice(-4) : '(Telefonisch)'}</div>
-                      <div>Gültig: {registration.zahlungKreditkarteGueltig || '–'}</div>
+                    <div className="bg-amber-50/80 p-2 rounded border border-amber-200 text-[9px] text-amber-900 font-sans space-y-0.5 mt-1">
+                      <div className="font-bold text-amber-950 flex items-center gap-1">
+                        💳 PCI-DSS konform
+                      </div>
+                      <div className="leading-tight">
+                        Übergabe der Kartendaten telefonisch unter <strong>02104 75711</strong>.
+                      </div>
                     </div>
                   )}
                 </div>

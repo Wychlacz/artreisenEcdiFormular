@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Registration, Reisender, ZimmerBuchung } from '../types';
 import { DEPARTURE_AIRPORTS, ROOM_TYPES } from '../mockData';
 import { motion, AnimatePresence } from 'motion/react';
@@ -6,7 +6,7 @@ import Logo from './Logo';
 import { 
   Users, Plane, BedDouble, Info, CheckCircle, Sheet, AlertCircle,
   ArrowRight, ArrowLeft, Heart, Sparkles, CheckSquare, ShieldCheck,
-  BookOpen, ExternalLink
+  BookOpen, ExternalLink, CreditCard
 } from 'lucide-react';
 
 interface RegistrationFormProps {
@@ -50,12 +50,9 @@ const DEFAULT_FORM_STATE = {
   flexOption: '' as 'Ja' | 'Nein' | '',
   zahlungsart: '' as 'Lastschrift' | 'Überweisung' | 'Kreditkarte' | '',
   zahlungLastschriftDatenEingeben: 'online' as 'online' | 'telefonisch',
-  zahlungKreditkarteDatenEingeben: 'online' as 'online' | 'telefonisch',
   zahlungIban: '',
   zahlungKontoinhaber: '',
-  zahlungKreditkarteNummer: '',
-  zahlungKreditkarteGueltig: '',
-  zahlungKreditkarteInhaber: '',
+  zahlungKreditkarteHinweisTelefon: true,
   dsgvoEinverstaendnis: false,
   dsgvoDrittdatenEinverstaendnis: false,
   zusatzVerlaengerung: false,
@@ -92,157 +89,220 @@ const applyDefaultRoomAssignments = (rooms: ZimmerBuchung[], companions: Reisend
   return { mainRoomIndex, updatedCompanions };
 };
 
+export interface FormMissingItem {
+  id: string;
+  field: string;
+  label: string;
+  errorMsg: string;
+  step: number;
+  elementId?: string;
+}
+
+export const getFormMissingItems = (data: typeof DEFAULT_FORM_STATE): {
+  step0: FormMissingItem[];
+  step1: FormMissingItem[];
+  all: FormMissingItem[];
+  isComplete: boolean;
+} => {
+  const step0: FormMissingItem[] = [];
+  const step1: FormMissingItem[] = [];
+
+  // Schritt 0: Reisende & Flughafen
+  if (!data.anrede) {
+    step0.push({ id: 'anrede', field: 'anrede', label: 'Anrede auswählen (Herr, Frau oder Divers)', errorMsg: 'Anrede ist ein Pflichtfeld.', step: 0, elementId: 'field-anrede' });
+  }
+  if (!data.vorname.trim()) {
+    step0.push({ id: 'vorname', field: 'vorname', label: 'Vorname des Anmelders', errorMsg: 'Vorname ist erforderlich.', step: 0, elementId: 'field-vorname' });
+  }
+  if (!data.nachname.trim()) {
+    step0.push({ id: 'nachname', field: 'nachname', label: 'Nachname des Anmelders', errorMsg: 'Nachname ist erforderlich.', step: 0, elementId: 'field-nachname' });
+  }
+  if (!data.geburtsdatum) {
+    step0.push({ id: 'geburtsdatum', field: 'geburtsdatum', label: 'Geburtsdatum des Anmelders', errorMsg: 'Geburtsdatum ist erforderlich.', step: 0, elementId: 'field-geburtsdatum' });
+  }
+  if (!data.strasseHausnummer.trim()) {
+    step0.push({ id: 'strasseHausnummer', field: 'strasseHausnummer', label: 'Straße und Hausnummer', errorMsg: 'Straße/Hausnummer ist erforderlich.', step: 0, elementId: 'field-strasse' });
+  }
+  if (!data.plz.trim()) {
+    step0.push({ id: 'plz', field: 'plz', label: 'Postleitzahl (PLZ)', errorMsg: 'PLZ ist erforderlich.', step: 0, elementId: 'field-plz' });
+  }
+  if (!data.ort.trim()) {
+    step0.push({ id: 'ort', field: 'ort', label: 'Wohnort', errorMsg: 'Wohnort ist erforderlich.', step: 0, elementId: 'field-ort' });
+  }
+  if (!data.email.trim()) {
+    step0.push({ id: 'email', field: 'email', label: 'E-Mail-Adresse', errorMsg: 'E-Mail-Adresse ist erforderlich.', step: 0, elementId: 'field-email' });
+  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
+    step0.push({ id: 'email', field: 'email', label: 'Gültige E-Mail-Adresse angeben', errorMsg: 'Ungültige E-Mail-Adresse.', step: 0, elementId: 'field-email' });
+  }
+  if (!data.telefonMobil.trim()) {
+    step0.push({ id: 'telefonMobil', field: 'telefonMobil', label: 'Mobiltelefon für Erreichbarkeit', errorMsg: 'Mobiltelefon ist für Erreichbarkeit erforderlich.', step: 0, elementId: 'field-telefon' });
+  }
+  if (!data.abflughafen) {
+    step0.push({ id: 'abflughafen', field: 'abflughafen', label: 'Abflughafen auswählen', errorMsg: 'Bitte wählen Sie einen Abflughafen.', step: 0, elementId: 'field-abflughafen' });
+  } else if (data.abflughafen === 'andere Flughäfen' && !data.abflughafenAnderer.trim()) {
+    step0.push({ id: 'abflughafenAnderer', field: 'abflughafenAnderer', label: 'Gewünschten alternativen Flughafen angeben', errorMsg: 'Bitte tragen Sie Ihren gewünschten Abflughafen ein.', step: 0, elementId: 'field-abflughafen-anderer' });
+  }
+
+  // Firmenrechnung
+  if (data.isFirmenrechnung) {
+    if (!data.firmenName?.trim()) {
+      step0.push({ id: 'firmenName', field: 'firmenName', label: 'Firmenname für Firmenrechnung', errorMsg: 'Firmenname ist ein Pflichtfeld für Firmenrechnungen.', step: 0, elementId: 'field-firmenname' });
+    }
+    if (!data.firmenAnschrift?.trim()) {
+      step0.push({ id: 'firmenAnschrift', field: 'firmenAnschrift', label: 'Firmenanschrift für Firmenrechnung', errorMsg: 'Firmenanschrift ist ein Pflichtfeld für Firmenrechnungen.', step: 0, elementId: 'field-firmenanschrift' });
+    }
+  }
+
+  // Abweichender Reisender für Zimmer 1
+  if (data.isHauptanmelderReisender === false) {
+    if (!data.abweichenderReisenderAnrede) {
+      step0.push({ id: 'abweichenderReisenderAnrede', field: 'abweichenderReisenderAnrede', label: 'Anrede des abweichenden Reisenden', errorMsg: 'Anrede des Reisenden ist ein Pflichtfeld.', step: 0, elementId: 'field-abweichender-reisender' });
+    }
+    if (!data.abweichenderReisenderVorname?.trim()) {
+      step0.push({ id: 'abweichenderReisenderVorname', field: 'abweichenderReisenderVorname', label: 'Vorname des abweichenden Reisenden', errorMsg: 'Vorname des Reisenden ist erforderlich.', step: 0, elementId: 'field-abweichender-reisender' });
+    }
+    if (!data.abweichenderReisenderNachname?.trim()) {
+      step0.push({ id: 'abweichenderReisenderNachname', field: 'abweichenderReisenderNachname', label: 'Nachname des abweichenden Reisenden', errorMsg: 'Nachname des Reisenden ist erforderlich.', step: 0, elementId: 'field-abweichender-reisender' });
+    }
+    if (!data.abweichenderReisenderGeburtsdatum) {
+      step0.push({ id: 'abweichenderReisenderGeburtsdatum', field: 'abweichenderReisenderGeburtsdatum', label: 'Geburtsdatum des abweichenden Reisenden', errorMsg: 'Geburtsdatum des Reisenden ist erforderlich.', step: 0, elementId: 'field-abweichender-reisender' });
+    }
+  }
+
+  // Zimmer-Kategorien
+  if (data.zimmer && data.zimmer.length > 0) {
+    data.zimmer.forEach((z, idx) => {
+      if (!z.zimmertyp) {
+        step0.push({ id: `zimmer_${idx}_zimmertyp`, field: `zimmer_${idx}_zimmertyp`, label: `Zimmerkategorie für Zimmer ${idx + 1} auswählen`, errorMsg: `Bitte wählen Sie eine Zimmerkategorie für Zimmer ${idx + 1}.`, step: 0, elementId: `field-zimmer-${idx}` });
+      }
+    });
+  }
+
+  // Mitreisende
+  if (data.personenAnzahl > 1) {
+    for (let i = 0; i < data.personenAnzahl - 1; i++) {
+      const companion = data.mitreisende[i];
+      if (!companion || !companion.vorname?.trim()) {
+        step0.push({ id: `companion_${i}_vorname`, field: `companion_${i}_vorname`, label: `Vorname von Mitreisendem ${i + 1}`, errorMsg: 'Vorname ist erforderlich.', step: 0, elementId: `field-companion-${i}` });
+      }
+      if (!companion || !companion.nachname?.trim()) {
+        step0.push({ id: `companion_${i}_nachname`, field: `companion_${i}_nachname`, label: `Nachname von Mitreisendem ${i + 1}`, errorMsg: 'Nachname ist erforderlich.', step: 0, elementId: `field-companion-${i}` });
+      }
+      if (!companion || !companion.geburtsdatum) {
+        step0.push({ id: `companion_${i}_geburtsdatum`, field: `companion_${i}_geburtsdatum`, label: `Geburtsdatum von Mitreisendem ${i + 1}`, errorMsg: 'Geburtsdatum ist erforderlich.', step: 0, elementId: `field-companion-${i}` });
+      }
+    }
+  }
+
+  // Zimmer-Zuordnung bei mehreren Zimmern
+  if (data.zimmer && data.zimmer.length > 1) {
+    if (typeof data.zimmerIndex !== 'number' || isNaN(data.zimmerIndex)) {
+      step0.push({ id: 'zimmerIndex', field: 'zimmerIndex', label: 'Zimmer-Zuordnung für den Hauptreisenden', errorMsg: 'Bitte ordnen Sie dem Hauptreisenden ein Zimmer zu.', step: 0, elementId: 'field-zimmer-zuordnung' });
+    }
+    if (data.personenAnzahl > 1) {
+      for (let i = 0; i < data.personenAnzahl - 1; i++) {
+        const companion = data.mitreisende[i];
+        if (!companion || typeof companion.zimmerIndex !== 'number' || isNaN(companion.zimmerIndex)) {
+          step0.push({ id: `companion_${i}_zimmerIndex`, field: `companion_${i}_zimmerIndex`, label: `Zimmer-Zuordnung für Mitreisenden ${i + 1}`, errorMsg: 'Bitte ordnen Sie diesem Mitreisenden ein Zimmer zu.', step: 0, elementId: 'field-zimmer-zuordnung' });
+        }
+      }
+    }
+  }
+
+  // Schritt 1: Zusatzleistungen & Rechtliches
+  if (data.zusatzVerlaengerung && !data.zusatzVerlaengerungText.trim()) {
+    step1.push({ id: 'zusatzVerlaengerungText', field: 'zusatzVerlaengerungText', label: 'Gewünschten Verlängerungszeitraum im Textfeld angeben', errorMsg: 'Bitte geben Sie den gewünschten Verlängerungszeitraum an.', step: 1, elementId: 'section-zusatz-verlaengerung' });
+  }
+  if (data.zusatzBeachten && !data.zusatzBeachtenText.trim()) {
+    step1.push({ id: 'zusatzBeachtenText', field: 'zusatzBeachtenText', label: 'Erläuterung der zu beachtenden Hinweise im Textfeld angeben', errorMsg: 'Bitte geben Sie Ihre Erläuterungen an.', step: 1, elementId: 'section-zusatz-beachten' });
+  }
+  if (data.zusatzSitzplatz && !data.zusatzSitzplatzText.trim()) {
+    step1.push({ id: 'zusatzSitzplatzText', field: 'zusatzSitzplatzText', label: 'Sitzplatzwunsch im Textfeld angeben', errorMsg: 'Bitte geben Sie Ihren Sitzplatzwunsch an.', step: 1, elementId: 'section-zusatz-sitzplatz' });
+  }
+
+  // 1. AGB
+  if (!data.agbKenntnis) {
+    step1.push({ id: 'agbKenntnis', field: 'agbKenntnis', label: '1. AGBs des Reiseveranstalters mit „Ja“ bestätigen', errorMsg: 'Bitte bestätigen Sie die AGBs mit „Ja“.', step: 1, elementId: 'section-agb' });
+  } else if (data.agbKenntnis === 'Nein') {
+    step1.push({ id: 'agbKenntnis', field: 'agbKenntnis', label: '1. AGBs müssen akzeptiert werden (bitte „Ja“ auswählen)', errorMsg: 'Das Formular kann nicht versendet werden, da die AGBs nicht akzeptiert wurden. Bitte wählen Sie „Ja“.', step: 1, elementId: 'section-agb' });
+  }
+
+  // 2. Pauschalreiserichtlinien
+  if (!data.pauschalreiseRichtlinien) {
+    step1.push({ id: 'pauschalreiseRichtlinien', field: 'pauschalreiseRichtlinien', label: '2. Pauschalreiserichtlinien zur Kenntnis nehmen (mit „Ja“ bestätigen)', errorMsg: 'Bitte bestätigen Sie die Kenntnisnahme mit „Ja“.', step: 1, elementId: 'section-pauschalreise' });
+  } else if (data.pauschalreiseRichtlinien === 'Nein') {
+    step1.push({ id: 'pauschalreiseRichtlinien', field: 'pauschalreiseRichtlinien', label: '2. Pauschalreiserichtlinien müssen mit „Ja“ bestätigt werden', errorMsg: 'Das Formular kann nur versendet werden, wenn Sie über die Pauschalreiserichtlinien informiert sind (Auswahl „Ja“).', step: 1, elementId: 'section-pauschalreise' });
+  }
+
+  // 3. Versicherung
+  if (!data.versicherungInfoBenoetigt) {
+    step1.push({ id: 'versicherungInfoBenoetigt', field: 'versicherungInfoBenoetigt', label: '3. Frage zur Reiserücktrittskostenversicherung beantworten (Ja oder Nein)', errorMsg: 'Bitte beantworten Sie diese Frage (Ja oder Nein).', step: 1, elementId: 'section-versicherung' });
+  }
+
+  // 4. Flexoption
+  if (!data.flexOption) {
+    step1.push({ id: 'flexOption', field: 'flexOption', label: '4. Frage zur Flexoption für 59 Euro beantworten (Ja oder Nein)', errorMsg: 'Bitte beantworten Sie diese Frage (Ja oder Nein).', step: 1, elementId: 'section-flexoption' });
+  }
+
+  // 5. Zahlungsart
+  if (!data.zahlungsart) {
+    step1.push({ id: 'zahlungsart', field: 'zahlungsart', label: '5. Gewünschte Zahlungsart auswählen (Überweisung, Lastschrift oder Kreditkarte)', errorMsg: 'Bitte wählen Sie Ihre bevorzugte Zahlungsart.', step: 1, elementId: 'section-zahlungsart' });
+  }
+
+  // 6. DSGVO
+  if (!data.dsgvoEinverstaendnis) {
+    step1.push({ id: 'dsgvoEinverstaendnis', field: 'dsgvoEinverstaendnis', label: '6. Kenntnisnahme zur Datenverarbeitung & Vertragserfüllung (DSGVO) ankreuzen', errorMsg: 'Bitte bestätigen Sie die Kenntnisnahme zur Datenverarbeitung zur Vertragserfüllung (Art. 6 Abs. 1 lit. b DSGVO).', step: 1, elementId: 'section-dsgvo' });
+  }
+
+  // 7. DSGVO Drittdaten
+  const hasThirdPartyData = data.personenAnzahl > 1 || data.isHauptanmelderReisender === false;
+  if (hasThirdPartyData && !data.dsgvoDrittdatenEinverstaendnis) {
+    step1.push({ id: 'dsgvoDrittdatenEinverstaendnis', field: 'dsgvoDrittdatenEinverstaendnis', label: '7. Berechtigung für Daten der mitreisenden Personen ankreuzen', errorMsg: 'Bitte bestätigen Sie die Berechtigung zur Angabe der Daten der mitreisenden Personen.', step: 1, elementId: 'section-dsgvo-drittdaten' });
+  }
+
+  const all = [...step0, ...step1];
+  return {
+    step0,
+    step1,
+    all,
+    isComplete: all.length === 0
+  };
+};
+
 export default function RegistrationForm({ onSubmit, onShowLegal, onShowAdmin }: RegistrationFormProps) {
   const [formData, setFormData] = useState(DEFAULT_FORM_STATE);
   const [currentStep, setCurrentStep] = useState(0);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [showMissingNotice, setShowMissingNotice] = useState(false);
+
+  // Live-Berechnung fehlender Angaben zur sofortigen reaktiven Farb- & Buttonsteuerung
+  const missingInfo = useMemo(() => {
+    return getFormMissingItems(formData);
+  }, [formData]);
+
+  const isAllAnswered = missingInfo.isComplete;
 
   const validateStep = (step: number): boolean => {
+    const missing = getFormMissingItems(formData);
+    const stepItems = step === 0 ? missing.step0 : missing.step1;
+
     const newErrors: Record<string, string> = {};
-
-    if (step === 0) {
-      // Schritt 0: Reisende & Flughafen
-      if (!formData.anrede) newErrors.anrede = 'Anrede ist ein Pflichtfeld.';
-      if (!formData.vorname.trim()) newErrors.vorname = 'Vorname ist erforderlich.';
-      if (!formData.nachname.trim()) newErrors.nachname = 'Nachname ist erforderlich.';
-      if (!formData.geburtsdatum) newErrors.geburtsdatum = 'Geburtsdatum ist erforderlich.';
-      if (!formData.strasseHausnummer.trim()) newErrors.strasseHausnummer = 'Straße/Hausnummer ist erforderlich.';
-      if (!formData.plz.trim()) newErrors.plz = 'PLZ ist erforderlich.';
-      if (!formData.ort.trim()) newErrors.ort = 'Wohnort ist erforderlich.';
-      if (!formData.email.trim()) {
-        newErrors.email = 'E-Mail-Adresse ist erforderlich.';
-      } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-        newErrors.email = 'Ungültige E-Mail-Adresse.';
-      }
-      if (!formData.telefonMobil.trim()) newErrors.telefonMobil = 'Mobiltelefon ist für Erreichbarkeit erforderlich.';
-      if (!formData.abflughafen) {
-        newErrors.abflughafen = 'Bitte wählen Sie einen Abflughafen.';
-      } else if (formData.abflughafen === 'andere Flughäfen' && !formData.abflughafenAnderer.trim()) {
-        newErrors.abflughafenAnderer = 'Bitte tragen Sie Ihren gewünschten Abflughafen ein.';
-      }
-
-      // Validierung Firmenrechnung
-      if (formData.isFirmenrechnung) {
-        if (!formData.firmenName?.trim()) {
-          newErrors.firmenName = 'Firmenname ist ein Pflichtfeld für Firmenrechnungen.';
-        }
-        if (!formData.firmenAnschrift?.trim()) {
-          newErrors.firmenAnschrift = 'Firmenanschrift ist ein Pflichtfeld für Firmenrechnungen.';
-        }
-      }
-
-      // Validierung abweichender Reisender für Zimmer 1 (falls Hauptanmelder nicht der Reisende ist)
-      if (formData.isHauptanmelderReisender === false) {
-        if (!formData.abweichenderReisenderAnrede) {
-          newErrors.abweichenderReisenderAnrede = 'Anrede des Reisenden ist ein Pflichtfeld.';
-        }
-        if (!formData.abweichenderReisenderVorname?.trim()) {
-          newErrors.abweichenderReisenderVorname = 'Vorname des Reisenden ist erforderlich.';
-        }
-        if (!formData.abweichenderReisenderNachname?.trim()) {
-          newErrors.abweichenderReisenderNachname = 'Nachname des Reisenden ist erforderlich.';
-        }
-        if (!formData.abweichenderReisenderGeburtsdatum) {
-          newErrors.abweichenderReisenderGeburtsdatum = 'Geburtsdatum des Reisenden ist erforderlich.';
-        }
-      }
-
-      // Validierung Zimmer / Room Configuration
-      if (formData.zimmer && formData.zimmer.length > 0) {
-        formData.zimmer.forEach((z, idx) => {
-          if (!z.zimmertyp) {
-            newErrors[`zimmer_${idx}_zimmertyp`] = `Bitte wählen Sie eine Zimmerkategorie für Zimmer ${idx + 1}.`;
-          }
-        });
-      }
-
-      // Validierung Mitreisende
-      if (formData.personenAnzahl > 1) {
-        for (let i = 0; i < formData.personenAnzahl - 1; i++) {
-          const companion = formData.mitreisende[i];
-          if (!companion || !companion.vorname.trim()) {
-            newErrors[`companion_${i}_vorname`] = 'Vorname ist erforderlich.';
-          }
-          if (!companion || !companion.nachname.trim()) {
-            newErrors[`companion_${i}_nachname`] = 'Nachname ist erforderlich.';
-          }
-          if (!companion || !companion.geburtsdatum) {
-            newErrors[`companion_${i}_geburtsdatum`] = 'Geburtsdatum ist erforderlich.';
-          }
-        }
-      }
-
-      // Validierung Zimmer-Zuordnung bei mehreren Zimmern
-      if (formData.zimmer && formData.zimmer.length > 1) {
-        if (formData.zimmerIndex === undefined || formData.zimmerIndex === null || formData.zimmerIndex === '') {
-          newErrors.zimmerIndex = 'Bitte ordnen Sie dem Hauptreisenden ein Zimmer zu.';
-        }
-        if (formData.personenAnzahl > 1) {
-          for (let i = 0; i < formData.personenAnzahl - 1; i++) {
-            const companion = formData.mitreisende[i];
-            if (!companion || companion.zimmerIndex === undefined || companion.zimmerIndex === null || companion.zimmerIndex === '') {
-              newErrors[`companion_${i}_zimmerIndex`] = 'Bitte ordnen Sie diesem Mitreisenden ein Zimmer zu.';
-            }
-          }
-        }
-      }
-    }
-
-    if (step === 1) {
-      // Schritt 1: Zusatzleistungen, Wichtige Angaben & Bestätigungen
-      if (formData.zusatzVerlaengerung && !formData.zusatzVerlaengerungText.trim()) {
-        newErrors.zusatzVerlaengerungText = 'Bitte geben Sie den gewünschten Verlängerungszeitraum an.';
-      }
-      if (formData.zusatzBeachten && !formData.zusatzBeachtenText.trim()) {
-        newErrors.zusatzBeachtenText = 'Bitte geben Sie Ihre Erläuterungen an.';
-      }
-      if (formData.zusatzSitzplatz && !formData.zusatzSitzplatzText.trim()) {
-        newErrors.zusatzSitzplatzText = 'Bitte geben Sie Ihren Sitzplatzwunsch an.';
-      }
-
-      // Wichtige Angaben (Ja / Nein)
-      if (!formData.agbKenntnis) {
-        newErrors.agbKenntnis = 'Bitte bestätigen Sie die AGBs mit „Ja“.';
-      } else if (formData.agbKenntnis === 'Nein') {
-        newErrors.agbKenntnis = 'Das Formular kann nicht versendet werden, da die AGBs nicht akzeptiert wurden. Bitte wählen Sie „Ja“.';
-      }
-
-      if (!formData.pauschalreiseRichtlinien) {
-        newErrors.pauschalreiseRichtlinien = 'Bitte bestätigen Sie die Kenntnisnahme mit „Ja“.';
-      } else if (formData.pauschalreiseRichtlinien === 'Nein') {
-        newErrors.pauschalreiseRichtlinien = 'Das Formular kann nur versendet werden, wenn Sie über die Pauschalreiserichtlinien informiert sind (Auswahl „Ja“).';
-      }
-
-      if (!formData.versicherungInfoBenoetigt) {
-        newErrors.versicherungInfoBenoetigt = 'Bitte beantworten Sie diese Frage (Ja oder Nein).';
-      }
-
-      if (!formData.flexOption) {
-        newErrors.flexOption = 'Bitte beantworten Sie diese Frage (Ja oder Nein).';
-      }
-
-      if (!formData.zahlungsart) {
-        newErrors.zahlungsart = 'Bitte wählen Sie Ihre bevorzugte Zahlungsart.';
-      }
-
-      if (!formData.dsgvoEinverstaendnis) {
-        newErrors.dsgvoEinverstaendnis = 'Sie müssen einwilligen, damit wir Ihre Anfrage bearbeiten dürfen.';
-      }
-
-      const hasThirdPartyData = formData.personenAnzahl > 1 || formData.isHauptanmelderReisender === false;
-      if (hasThirdPartyData && !formData.dsgvoDrittdatenEinverstaendnis) {
-        newErrors.dsgvoDrittdatenEinverstaendnis = 'Bitte bestätigen Sie die Berechtigung zur Angabe der Daten der mitreisenden Personen.';
-      }
-    }
+    stepItems.forEach(item => {
+      newErrors[item.field] = item.errorMsg;
+    });
 
     setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    return stepItems.length === 0;
   };
 
   const handleNext = () => {
     if (validateStep(currentStep)) {
       setCurrentStep(prev => prev + 1);
+      setShowMissingNotice(false);
       window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+      setShowMissingNotice(true);
+      window.scrollTo({ top: 400, behavior: 'smooth' });
     }
   };
 
@@ -371,9 +431,28 @@ export default function RegistrationForm({ onSubmit, onShowLegal, onShowAdmin }:
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (validateStep(currentStep)) {
-      onSubmit(formData);
+    const missing = getFormMissingItems(formData);
+
+    if (!missing.isComplete) {
+      const newErrors: Record<string, string> = {};
+      missing.all.forEach(item => {
+        newErrors[item.field] = item.errorMsg;
+      });
+      setErrors(newErrors);
+      setShowMissingNotice(true);
+
+      setTimeout(() => {
+        const noticeEl = document.getElementById('form-missing-notice-card');
+        if (noticeEl) {
+          noticeEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 50);
+      return;
     }
+
+    setErrors({});
+    setShowMissingNotice(false);
+    onSubmit(formData);
   };
 
   const steps = [
@@ -1250,7 +1329,7 @@ export default function RegistrationForm({ onSubmit, onShowLegal, onShowAdmin }:
             <div className="space-y-6">
 
               {/* 1. AGBs vom Veranstalter */}
-              <div className={`p-4 rounded-xl border transition-colors space-y-3 ${formData.agbKenntnis === 'Nein' ? 'bg-rose-50/70 border-rose-300' : 'bg-white border-brand-gray'}`}>
+              <div id="section-agb" className={`p-4 rounded-xl border transition-colors space-y-3 ${formData.agbKenntnis === 'Nein' ? 'bg-rose-50/70 border-rose-300' : 'bg-white border-brand-gray'}`}>
                 <div className="block text-xs font-display font-black text-brand-dark-brown uppercase tracking-wider leading-relaxed">
                   1. Wir haben die <a href="https://artreisen.de/agb/" target="_blank" rel="noopener noreferrer" className="text-brand-blue underline hover:text-brand-orange transition-colors font-extrabold">AGBs des Reiseveranstalters (Reisebüro art reisen GmbH)</a> zur Kenntnis genommen und akzeptiert <span className="text-brand-orange">*</span>
                 </div>
@@ -1280,7 +1359,7 @@ export default function RegistrationForm({ onSubmit, onShowLegal, onShowAdmin }:
               </div>
 
               {/* 2. Pauschalreiserichtlinien */}
-              <div className={`p-4 rounded-xl border transition-colors space-y-3 ${formData.pauschalreiseRichtlinien === 'Nein' ? 'bg-rose-50/70 border-rose-300' : 'bg-white border-brand-gray'}`}>
+              <div id="section-pauschalreise" className={`p-4 rounded-xl border transition-colors space-y-3 ${formData.pauschalreiseRichtlinien === 'Nein' ? 'bg-rose-50/70 border-rose-300' : 'bg-white border-brand-gray'}`}>
                 <div className="block text-xs font-display font-black text-brand-dark-brown uppercase tracking-wider leading-relaxed">
                   2. Über die <a href="https://www.aldiana.com/dam/jcr:d462857b-be29-4edb-b2f9-cb5efa884352/Pauschalreiserichtlinien-S2023.2025-04-25-10-13-30.pdf" target="_blank" rel="noopener noreferrer" className="text-brand-blue underline hover:text-brand-orange transition-colors">Pauschalreiserichtlinien</a> sind wir informiert <span className="text-brand-orange">*</span>
                 </div>
@@ -1310,7 +1389,7 @@ export default function RegistrationForm({ onSubmit, onShowLegal, onShowAdmin }:
               </div>
 
               {/* 3. Reiserücktrittskostenversicherung */}
-              <div className="bg-white p-4 rounded-xl border border-brand-gray space-y-3">
+              <div id="section-versicherung" className="bg-white p-4 rounded-xl border border-brand-gray space-y-3">
                 <label className="block text-xs font-display font-black text-brand-dark-brown uppercase tracking-wider">
                   3. Wir benötigen Informationen zur Reiserücktrittskostenversicherung <span className="text-brand-orange">*</span>
                 </label>
@@ -1335,7 +1414,7 @@ export default function RegistrationForm({ onSubmit, onShowLegal, onShowAdmin }:
               </div>
 
               {/* 4. Flexoption für 59 Euro */}
-              <div className="bg-brand-orange/5 p-5 rounded-2xl border border-brand-orange/20 space-y-3">
+              <div id="section-flexoption" className="bg-brand-orange/5 p-5 rounded-2xl border border-brand-orange/20 space-y-3">
                 <label className="block text-xs font-display font-black text-brand-dark-brown uppercase tracking-wider">
                   4. Wir möchten gerne für unsere Reise eine Flexoption für 59 Euro abschliessen <span className="text-brand-orange">*</span>
                 </label>
@@ -1366,7 +1445,7 @@ export default function RegistrationForm({ onSubmit, onShowLegal, onShowAdmin }:
               </div>
 
               {/* 5. Gewünschte Zahlungsart */}
-              <div className="bg-white p-4 rounded-xl border border-brand-gray space-y-3">
+              <div id="section-zahlungsart" className="bg-white p-4 rounded-xl border border-brand-gray space-y-3">
                 <label className="block text-xs font-display font-black text-brand-dark-brown uppercase tracking-wider">
                   5. Bitte wählen Sie Ihre gewünschte Zahlungsart <span className="text-brand-orange">*</span>
                 </label>
@@ -1518,102 +1597,45 @@ export default function RegistrationForm({ onSubmit, onShowLegal, onShowAdmin }:
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: 'auto' }}
                       exit={{ opacity: 0, height: 0 }}
-                      className="mt-3 p-4 bg-brand-light-bg/50 border border-brand-gray rounded-xl space-y-3 overflow-hidden"
+                      className="mt-3 p-4 bg-amber-50/70 border border-amber-200/80 rounded-xl space-y-3 overflow-hidden text-amber-950"
                     >
-                      <h4 className="text-xs font-display font-black text-brand-dark-brown uppercase tracking-wide">
-                        Angaben zur Kreditkarte
-                      </h4>
-
-                      {/* Auswahl, ob Daten online eingetragen werden sollen */}
-                      <div className="bg-white/70 p-3 rounded-xl border border-brand-gray flex flex-col gap-2">
-                        <span className="text-[11px] font-bold text-brand-dark-brown">
-                          Wie möchten Sie uns Ihre Kreditkartendaten übermitteln?
-                        </span>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                          <button
-                            type="button"
-                            onClick={() => updateField('zahlungKreditkarteDatenEingeben', 'online')}
-                            className={`py-1.5 px-3 rounded-lg text-xs font-semibold cursor-pointer border text-center transition-all ${
-                              formData.zahlungKreditkarteDatenEingeben === 'online'
-                                ? 'bg-brand-blue/10 border-brand-blue text-brand-blue'
-                                : 'bg-white border-gray-300 text-gray-700 hover:border-gray-400'
-                            }`}
-                          >
-                            Jetzt online eingeben
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => updateField('zahlungKreditkarteDatenEingeben', 'telefonisch')}
-                            className={`py-1.5 px-3 rounded-lg text-xs font-semibold cursor-pointer border text-center transition-all ${
-                              formData.zahlungKreditkarteDatenEingeben === 'telefonisch'
-                                ? 'bg-brand-blue/10 border-brand-blue text-brand-blue'
-                                : 'bg-white border-gray-300 text-gray-700 hover:border-gray-400'
-                            }`}
-                          >
-                            Später auf anderem Weg (z.B. telefonisch)
-                          </button>
-                        </div>
+                      <div className="flex items-center gap-2">
+                        <CreditCard className="w-4 h-4 text-amber-700 shrink-0" />
+                        <h4 className="text-xs font-display font-black uppercase tracking-wide text-amber-900">
+                          Sicherheitshinweis zur Kreditkartenzahlung (PCI-DSS konform)
+                        </h4>
                       </div>
 
-                      {formData.zahlungKreditkarteDatenEingeben === 'online' && (
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-1">
-                          <div className="space-y-1">
-                            <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider">
-                              Karteninhaber (wie auf Karte)
-                            </label>
-                            <input
-                              type="text"
-                              value={formData.zahlungKreditkarteInhaber || ''}
-                              onChange={(e) => updateField('zahlungKreditkarteInhaber', e.target.value)}
-                              className="w-full bg-white px-3 py-2 text-xs border border-brand-gray rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-blue font-sans font-bold"
-                              placeholder="Z.B. MAX MUSTERMANN"
-                            />
-                          </div>
-                          <div className="space-y-1">
-                            <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider">
-                              Kreditkartennummer
-                            </label>
-                            <input
-                              type="text"
-                              value={formData.zahlungKreditkarteNummer || ''}
-                              onChange={(e) => updateField('zahlungKreditkarteNummer', e.target.value)}
-                              className="w-full bg-white px-3 py-2 text-xs border border-brand-gray rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-blue font-sans font-mono font-bold"
-                              placeholder="4111 2222 3333 4444"
-                            />
-                          </div>
-                          <div className="space-y-1">
-                            <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider">
-                              Gültig bis (MM/JJ)
-                            </label>
-                            <input
-                              type="text"
-                              value={formData.zahlungKreditkarteGueltig || ''}
-                              onChange={(e) => updateField('zahlungKreditkarteGueltig', e.target.value)}
-                              className="w-full bg-white px-3 py-2 text-xs border border-brand-gray rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-blue font-sans font-bold text-center"
-                              placeholder="MM/JJ"
-                            />
-                          </div>
-                        </div>
-                      )}
+                      <div className="text-xs space-y-2 leading-relaxed font-sans text-amber-900">
+                        <p className="bg-white/80 p-3 rounded-lg border border-amber-200 text-[11px]">
+                          🔒 <strong>Keine Kreditkartendaten im Webformular:</strong> Gemäß den Sicherheitsstandards der Kreditkartenindustrie (<strong>PCI-DSS</strong>) werden über dieses Online-Formular keine Kreditkartennummern oder Prüfziffern erfasst und niemals per Webhook oder E-Mail übertragen.
+                        </p>
 
-                      {/* Alternativer Hinweis unter Kreditkarte */}
-                      <div className="bg-brand-blue/5 border border-brand-blue/20 p-3 rounded-lg text-xs text-brand-blue font-sans flex items-start gap-2 leading-relaxed mt-2">
-                        <span className="text-sm shrink-0">📞</span>
-                        <div>
-                          <strong>Alternativer Hinweis:</strong> Sie können uns Ihre Kreditkartendaten auch sehr gerne <strong>telefonisch durchgeben</strong>, falls Sie diese nicht online eintragen möchten! Weisen Sie uns einfach darauf hin.
+                        <div className="bg-brand-blue/5 border border-brand-blue/20 p-3 rounded-lg text-xs text-brand-blue flex items-start gap-2.5">
+                          <span className="text-base shrink-0">📞</span>
+                          <div>
+                            <strong>Telefonische Übergabe:</strong> Bitte übergeben Sie uns Ihre Kreditkartendaten nach der Anmeldung einfach <strong>telefonisch unter 02104 75711</strong> (Mo–Fr) an unser Serviceteam der Reisebüro art reisen GmbH.
+                          </div>
                         </div>
+
+                        <p className="text-[11px] text-gray-600 italic">
+                          Alternativ stellen wir Ihnen auf Wunsch nach Eingang der Buchung gerne einen gesicherten Zahlungslink über einen zertifizierten Zahlungsanbieter (z. B. Stripe) bereit.
+                        </p>
+                        <p className="text-[10px] text-amber-800">
+                          * Hinweis: Bei Kontingentbuchungen mit Kreditkarte fällt ein Disagio von 2 % an.
+                        </p>
                       </div>
                     </motion.div>
                   )}
                 </AnimatePresence>
               </div>
 
-              {/* DSGVO Einwilligung */}
-              <div className="p-4 bg-brand-light-bg/70 border border-brand-gray rounded-xl space-y-4">
+              {/* Kenntnisnahme zur Datenverarbeitung & Vertragserfüllung */}
+              <div id="section-dsgvo" className="p-4 bg-brand-light-bg/70 border border-brand-gray rounded-xl space-y-4">
                 <div className="flex items-center justify-between gap-2 border-b border-brand-gray/60 pb-2">
                   <div className="flex items-center gap-1.5 text-xs font-display font-bold text-brand-dark-brown">
                     <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
-                    <span>Datenschutz & DSGVO-Einwilligung</span>
+                    <span>Datenschutz & Vertragserfüllung (Art. 6 Abs. 1 lit. b DSGVO)</span>
                   </div>
                   <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100/80 text-emerald-800 border border-emerald-300/60">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse" />
@@ -1621,7 +1643,7 @@ export default function RegistrationForm({ onSubmit, onShowLegal, onShowAdmin }:
                   </span>
                 </div>
 
-                {/* 1. Haupt-Einwilligung zur Datenverarbeitung & Weiterleitung per Make/E-Mail */}
+                {/* 1. Kenntnisnahme zur Datenverarbeitung zur Vertragserfüllung */}
                 <div>
                   <label className="inline-flex items-start gap-3 cursor-pointer">
                     <input
@@ -1642,13 +1664,13 @@ export default function RegistrationForm({ onSubmit, onShowLegal, onShowAdmin }:
                     />
                     <div className="font-sans text-xs text-brand-dark-text leading-relaxed">
                       <span className="font-bold text-brand-dark-brown">
-                        Einwilligung zur Datenverarbeitung & Weiterleitung <span className="text-brand-orange">*</span>
+                        Kenntnisnahme zur Datenverarbeitung & Vertragserfüllung (Art. 6 Abs. 1 lit. b DSGVO) <span className="text-brand-orange">*</span>
                       </span>
                       <p className="text-[11px] text-gray-800 mt-1 font-medium leading-normal">
-                        „Ich willige ein, dass meine Daten zur Bearbeitung der Buchungsanfrage gespeichert und per E-Mail an art reisen GmbH weitergeleitet werden.“
+                        „Ich nehme zur Kenntnis, dass meine Daten zur Bearbeitung der Buchungsanfrage und zur Durchführung des Reisevertrags (Vertragserfüllung gem. Art. 6 Abs. 1 lit. b DSGVO) verarbeitet und per E-Mail an die art reisen GmbH weitergeleitet werden.“
                       </p>
                       <p className="text-[10px] text-gray-500 mt-1.5">
-                        🔒 <strong>Widerruf & Rechte:</strong> Sie können diese Einwilligung jederzeit mit Wirkung für die Zukunft formlos per E-Mail an <a href="mailto:info@artreisen.de" className="underline text-brand-blue font-semibold">info@artreisen.de</a> widerrufen. Die technische Übermittlung erfolgt sicher verschlüsselt (u. a. via Make.com als Auftragsverarbeiter). Ausführliche Informationen zu Ihren Betroffenenrechten und zur Speicherdauer finden Sie in unserer{' '}
+                        🔒 <strong>Rechtlicher Hinweis:</strong> Die Datenverarbeitung ist für vorvertragliche Maßnahmen und die Erfüllung des Reisevertrags zwingend erforderlich (keine bloße Einwilligung). Kreditkartendaten werden niemals über dieses Formular oder E-Mail/Make übertragen (PCI-DSS Standard). Operative Buchungsdaten werden 3 Monate nach Reiseende gelöscht. Ausführliche Informationen zu Auftragsverarbeitern (Make.com) und Ihren Betroffenenrechten finden Sie in unserer{' '}
                         <button
                           type="button"
                           onClick={(e) => {
@@ -1657,7 +1679,7 @@ export default function RegistrationForm({ onSubmit, onShowLegal, onShowAdmin }:
                             if (onShowLegal) {
                               onShowLegal('datenschutz');
                             } else {
-                              window.open('https://artreisen.de/datenschutz/', '_blank');
+                              window.location.hash = '#datenschutz';
                             }
                           }}
                           className="underline text-brand-blue font-bold cursor-pointer hover:text-brand-orange transition-colors"
@@ -1677,7 +1699,7 @@ export default function RegistrationForm({ onSubmit, onShowLegal, onShowAdmin }:
 
                 {/* 2. Bestätigung zu Drittdaten der Mitreisenden (falls Mitreisende oder abweichender Reisender vorhanden) */}
                 {(formData.personenAnzahl > 1 || formData.isHauptanmelderReisender === false) && (
-                  <div className="pt-3 border-t border-brand-gray/50">
+                  <div id="section-dsgvo-drittdaten" className="pt-3 border-t border-brand-gray/50">
                     <label className="inline-flex items-start gap-3 cursor-pointer">
                       <input
                         type="checkbox"
@@ -1721,14 +1743,129 @@ export default function RegistrationForm({ onSubmit, onShowLegal, onShowAdmin }:
           </motion.div>
         )}
 
+        {/* Fehlende Pflichtangaben Hinweis-Box (erscheint wenn man auf Absenden klickt oder wenn unvollständig) */}
+        {showMissingNotice && !isAllAnswered && (
+          <motion.div
+            id="form-missing-notice-card"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-6 p-5 bg-rose-50/95 border-2 border-rose-300 rounded-2xl shadow-sm text-brand-dark-brown font-sans"
+          >
+            <div className="flex items-start justify-between gap-3 border-b border-rose-200 pb-3 mb-3">
+              <div className="flex items-center gap-2 text-rose-800 font-display font-black text-xs sm:text-sm uppercase tracking-wide">
+                <AlertCircle className="w-5 h-5 text-rose-600 shrink-0" />
+                <span>Bitte vervollständigen Sie noch folgende {missingInfo.all.length} Pflichtangabe{missingInfo.all.length === 1 ? '' : 'n'}:</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowMissingNotice(false)}
+                className="p-1 text-gray-400 hover:text-gray-700 rounded-md cursor-pointer text-xs"
+                title="Hinweis schließen"
+              >
+                ✕
+              </button>
+            </div>
+
+            <p className="text-xs text-rose-900 font-medium mb-3">
+              Das Anmeldeformular kann erst verbindlich abgesendet werden (der Button wird orange aktiviert), wenn alle erforderlichen Felder und Fragen beantwortet sind:
+            </p>
+
+            <div className="space-y-3 text-xs">
+              {/* Fehlende Punkte im aktuellen Schritt (Zusatzleistungen & Rechtliches) */}
+              {missingInfo.step1.length > 0 && (
+                <div className="space-y-1.5">
+                  <span className="font-display font-bold text-[11px] text-brand-dark-brown uppercase tracking-wider block">
+                    Noch zu beantworten in Schritt 2 ({missingInfo.step1.length}):
+                  </span>
+                  <ul className="space-y-1.5 pl-1">
+                    {missingInfo.step1.map(item => (
+                      <li key={item.id}>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (item.elementId) {
+                              const el = document.getElementById(item.elementId);
+                              if (el) {
+                                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                el.classList.add('ring-2', 'ring-rose-500');
+                                setTimeout(() => el.classList.remove('ring-2', 'ring-rose-500'), 2500);
+                              }
+                            }
+                          }}
+                          className="inline-flex items-center gap-2 text-left text-rose-700 hover:text-brand-orange hover:underline font-semibold cursor-pointer group py-0.5"
+                        >
+                          <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0 group-hover:bg-brand-orange" />
+                          <span>{item.label}</span>
+                          <span className="text-[10px] text-gray-400 group-hover:text-brand-orange font-normal">→ jetzt auswählen</span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Fehlende Punkte in Schritt 1 (Reisende & Unterkunft) */}
+              {missingInfo.step0.length > 0 && (
+                <div className="pt-3 border-t border-rose-200/80 space-y-2">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <span className="font-display font-bold text-[11px] text-rose-900 uppercase tracking-wider">
+                      Fehlende Angaben in Schritt 1 (Reisende & Unterkunft):
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCurrentStep(0);
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }}
+                      className="inline-flex items-center gap-1.5 text-xs font-display font-bold text-brand-blue hover:text-brand-blue/80 bg-white border border-brand-blue/30 hover:border-brand-blue px-3 py-1.5 rounded-lg shadow-xs cursor-pointer w-fit"
+                    >
+                      <ArrowLeft className="w-3.5 h-3.5" />
+                      Zu Schritt 1 wechseln & ergänzen
+                    </button>
+                  </div>
+                  <ul className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 pl-1 text-[11px] text-gray-700">
+                    {missingInfo.step0.map(item => (
+                      <li key={item.id} className="flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
+                        <span>{item.label}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
+
+        {/* Erfolgsanzeige wenn alles ausgefüllt ist und man zuvor Fehler sah */}
+        {showMissingNotice && isAllAnswered && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-6 p-4 bg-emerald-50 border border-emerald-300 rounded-xl flex items-center justify-between gap-3 text-emerald-900 text-xs font-sans"
+          >
+            <div className="flex items-center gap-2 font-medium">
+              <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
+              <span>Alle Pflichtangaben sind vollständig ausgefüllt! Der Absenden-Button ist nun aktiviert.</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowMissingNotice(false)}
+              className="text-emerald-700 hover:text-emerald-900 text-xs font-bold cursor-pointer"
+            >
+              ✕
+            </button>
+          </motion.div>
+        )}
+
         {/* Buttons */}
-        <div className="flex justify-between items-center border-t border-brand-gray pt-6" id="form-action-buttons">
+        <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-4 border-t border-brand-gray pt-6" id="form-action-buttons">
           {currentStep > 0 ? (
             <button
               type="button"
               onClick={handleBack}
               id="btn-back-step"
-              className="inline-flex items-center gap-2 border border-brand-gray hover:bg-brand-light-bg text-brand-dark-brown font-display font-bold text-xs px-5 py-3 rounded-xl transition-all cursor-pointer"
+              className="inline-flex items-center justify-center gap-2 border border-brand-gray hover:bg-brand-light-bg text-brand-dark-brown font-display font-bold text-xs px-5 py-3 rounded-xl transition-all cursor-pointer"
             >
               <ArrowLeft className="w-4 h-4" />
               Zurück
@@ -1742,20 +1879,47 @@ export default function RegistrationForm({ onSubmit, onShowLegal, onShowAdmin }:
               type="button"
               onClick={handleNext}
               id="btn-next-step"
-              className="inline-flex items-center gap-2 bg-brand-blue hover:bg-brand-blue/90 text-white font-display font-bold text-xs px-6 py-3 rounded-xl transition-all cursor-pointer shadow-md ml-auto"
+              className="inline-flex items-center justify-center gap-2 bg-brand-blue hover:bg-brand-blue/90 text-white font-display font-bold text-xs px-6 py-3 rounded-xl transition-all cursor-pointer shadow-md sm:ml-auto"
             >
               Weiter
               <ArrowRight className="w-4 h-4" />
             </button>
           ) : (
-            <button
-              type="submit"
-              id="btn-submit-registration"
-              className="inline-flex items-center gap-2 bg-brand-orange hover:bg-brand-orange-yellow text-white font-display font-black text-xs px-8 py-3.5 rounded-xl transition-all cursor-pointer shadow-lg ml-auto"
-            >
-              Absenden und Zusatzleistungen buchen
-              <CheckCircle className="w-4 h-4" />
-            </button>
+            <div className="flex flex-col sm:flex-row items-end sm:items-center gap-3 sm:ml-auto w-full sm:w-auto">
+              {!isAllAnswered ? (
+                <div className="w-full sm:w-auto flex flex-col items-end gap-1">
+                  <button
+                    type="submit"
+                    id="btn-submit-registration"
+                    onClick={() => setShowMissingNotice(true)}
+                    title="Formular ist noch unvollständig. Klicken Sie hier, um zu sehen, was noch fehlt."
+                    className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-gray-100 hover:bg-gray-200 border-2 border-dashed border-gray-300 hover:border-gray-400 text-gray-700 hover:text-gray-900 font-display font-bold text-xs px-6 py-3.5 rounded-xl transition-all cursor-pointer shadow-xs"
+                  >
+                    <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+                    Absenden ({missingInfo.all.length} {missingInfo.all.length === 1 ? 'Angabe fehlt' : 'Angaben fehlen noch'})
+                  </button>
+                  <span className="text-[10px] text-gray-500 font-sans pr-1">
+                    Wird orange, sobald alle Pflichtfragen beantwortet sind
+                  </span>
+                </div>
+              ) : (
+                <div className="w-full sm:w-auto flex flex-col items-end gap-1">
+                  <button
+                    type="submit"
+                    id="btn-submit-registration"
+                    title="Formular ist vollständig – Jetzt verbindlich absenden"
+                    className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-brand-orange hover:bg-brand-orange-yellow text-white font-display font-black text-xs px-8 py-3.5 rounded-xl transition-all cursor-pointer shadow-lg shadow-brand-orange/25 ring-2 ring-brand-orange/20"
+                  >
+                    Absenden und Zusatzleistungen buchen
+                    <CheckCircle className="w-4 h-4" />
+                  </button>
+                  <span className="text-[10px] text-emerald-700 font-sans font-semibold pr-1 flex items-center gap-1">
+                    <CheckCircle className="w-3 h-3 text-emerald-600 inline" />
+                    Alle Angaben vollständig
+                  </span>
+                </div>
+              )}
+            </div>
           )}
         </div>
 

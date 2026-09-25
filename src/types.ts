@@ -62,13 +62,11 @@ export interface Registration {
   flexOption: 'Ja' | 'Nein' | '';
   zahlungsart: 'Lastschrift' | 'Überweisung' | 'Kreditkarte' | '';
   zahlungLastschriftDatenEingeben?: 'online' | 'telefonisch' | '';
-  zahlungKreditkarteDatenEingeben?: 'online' | 'telefonisch' | '';
   zahlungIban?: string;
   zahlungKontoinhaber?: string;
-  zahlungKreditkarteNummer?: string;
-  zahlungKreditkarteGueltig?: string;
-  zahlungKreditkarteInhaber?: string;
-  dsgvoEinverstaendnis: boolean;
+  // PCI-DSS: Kreditkartendaten werden niemals über Formular/Webhook/E-Mail übertragen, sondern telefonisch oder per zertifiziertem Zahlungslink abgewickelt
+  zahlungKreditkarteHinweisTelefon?: boolean;
+  dsgvoEinverstaendnis: boolean; // Kenntnisnahme zur Datenverarbeitung & Vertragserfüllung gem. Art. 6 Abs. 1 lit. b DSGVO
   dsgvoDrittdatenEinverstaendnis?: boolean;
   
   // Zusatzleistungen (Absenden und Zusatzleistungen)

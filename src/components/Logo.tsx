@@ -57,7 +57,7 @@ export default function Logo({ className = '' }: LogoProps) {
           fill="#0082c3" 
           fontSize="24" 
           fontWeight="700" 
-          fontFamily='"Comfortaa", "Nunito", system-ui, sans-serif'
+          fontFamily='system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
           letterSpacing="0.04em"
           id="logo-curved-text"
         >

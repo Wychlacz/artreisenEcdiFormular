@@ -165,13 +165,14 @@ ZUSATZLEISTUNGEN & VERLÄNGERUNGEN:
 ZAHLUNGSINFORMATIONEN:
 -------------------------------------------------------------------------
 - Gewählte Zahlungsart:               ${zahlungsart || "Keine Angabe"}
-${zahlungsart === "Lastschrift" ? `- Kontoinhaber:                      ${zahlungKontoinhaber || '-'}\n- IBAN:                             ${zahlungIban || '-'}` : ""}${zahlungsart === "Kreditkarte" ? `- Karteninhaber:                    ${zahlungKreditkarteInhaber || '-'}\n- Kreditkartennummer:               ${zahlungKreditkarteNummer ? 'xxxxxxxxxxxx' + zahlungKreditkarteNummer.slice(-4) : '(Wird telefonisch durchgegeben)'}\n- Gültig bis:                       ${zahlungKreditkarteGueltig || '-'}` : ""}
+${zahlungsart === "Lastschrift" ? `- Kontoinhaber:                      ${zahlungKontoinhaber || '-'}\n- IBAN:                             ${zahlungIban || '-'}` : ""}${zahlungsart === "Kreditkarte" ? `- Zahlungsabwicklung:                Kreditkartendaten werden telefonisch an art reisen GmbH übermittelt (02104 75711, PCI-DSS konform – keine Kartendaten im Web/Webhook/E-Mail)` : ""}
 
 GESETZLICHE BESTÄTIGUNGEN:
 -------------------------------------------------------------------------
 - AGB des Veranstalters akzeptiert:   ${agbKenntnis || "Nein"}
 - Pauschalreiserichtlinien gelesen:   ${pauschalreiseRichtlinien || "Nein"}
 - Reiseversicherung Info benötigt:    ${versicherungInfoBenoetigt || "Nein"}
+- Kenntnisnahme Vertragserfüllung (Art. 6 Abs. 1 lit. b DSGVO): Ja
 `;
 
       const smtpHost = process.env.SMTP_HOST;
@@ -305,6 +306,14 @@ GESETZLICHE BESTÄTIGUNGEN:
           // Remove mitreisende and mitreisendeArray properties as requested
           delete (cleanRegistration as any).mitreisende;
           delete (cleanRegistration as any).mitreisendeArray;
+
+          // PCI-DSS: Ensure no credit card sensitive parameters are sent to webhook
+          delete (cleanRegistration as any).zahlungKreditkarteNummer;
+          delete (cleanRegistration as any).zahlungKreditkarteGueltig;
+          delete (cleanRegistration as any).zahlungKreditkarteInhaber;
+          if (cleanRegistration.zahlungsart === 'Kreditkarte') {
+            (cleanRegistration as any).zahlungKreditkarteHinweis = 'Telefonische Übergabe an art reisen GmbH (02104 75711, PCI-DSS konform)';
+          }
 
           const makeResponse = await fetch(makeWebhookUrl, {
             method: "POST",
