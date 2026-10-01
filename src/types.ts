@@ -7,7 +7,7 @@ export interface Reisender {
 
 export interface ZimmerBuchung {
   gaesteAnzahl: number;
-  zimmertyp: 'Einzelzimmer ohne Meerblick' | 'Einzelzimmer mit Meerblick' | 'Doppelzimmer ohne Meerblick' | 'Doppelzimmer mit Meerblick' | 'Atlantiksuite' | 'Juniorsuite' | 'Familienzimmer' | '';
+  zimmertyp: 'Einzelzimmer ohne Meerblick' | 'Einzelzimmer mit Meerblick' | 'Doppelzimmer ohne Meerblick' | 'Doppelzimmer mit Meerblick' | 'Atlantiksuite' | 'Atlantik Suite mit Meerblick' | 'Atlantiksuite mit Meerblick' | 'Juniorsuite' | 'Familienzimmer' | 'Familienzimmer mit Meerblick' | '';
 }
 
 export interface Registration {
@@ -53,7 +53,7 @@ export interface Registration {
   abflughafenAnderer?: string;
   
   // Zimmertyp
-  zimmertyp: 'Einzelzimmer ohne Meerblick' | 'Einzelzimmer mit Meerblick' | 'Doppelzimmer ohne Meerblick' | 'Doppelzimmer mit Meerblick' | 'Atlantiksuite' | 'Juniorsuite' | 'Familienzimmer' | '';
+  zimmertyp: 'Einzelzimmer ohne Meerblick' | 'Einzelzimmer mit Meerblick' | 'Doppelzimmer ohne Meerblick' | 'Doppelzimmer mit Meerblick' | 'Atlantiksuite' | 'Atlantik Suite mit Meerblick' | 'Atlantiksuite mit Meerblick' | 'Juniorsuite' | 'Familienzimmer' | 'Familienzimmer mit Meerblick' | '';
   
   // Wichtige Angaben (Ja / Nein)
   agbKenntnis: 'Ja' | 'Nein' | '';

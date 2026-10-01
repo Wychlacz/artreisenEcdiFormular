@@ -95,7 +95,9 @@ export const ROOM_TYPES = [
   'Einzelzimmer mit Meerblick',
   'Doppelzimmer ohne Meerblick',
   'Doppelzimmer mit Meerblick',
-  'Atlantiksuite',
+  'Familienzimmer',
+  'Familienzimmer mit Meerblick',
   'Juniorsuite',
-  'Familienzimmer'
+  'Atlantiksuite',
+  'Atlantik Suite mit Meerblick'
 ];
