@@ -76,7 +76,7 @@ Pauschalreiserichtlinien informiert:    ${registration.pauschalreiseRichtlinien}
 Rücktrittskostenversicherung Info benötigt:                                    ${registration.versicherungInfoBenoetigt}
 Flexoption abschließen (59,- €):         ${registration.flexOption}
 Gewählte Zahlungsart:                    ${registration.zahlungsart || 'Keine Angabe'}
-${registration.zahlungsart === 'Lastschrift' ? `* IBAN: ${registration.zahlungIban || 'Keine Angabe'}\n* Kontoinhaber: ${registration.zahlungKontoinhaber || 'Keine Angabe'}` : ''}${registration.zahlungsart === 'Kreditkarte' ? `* Zahlungsabwicklung: Kreditkartendaten werden telefonisch an art reisen übergeben (02104 75711, PCI-DSS konform). Keine Speicherung im Webformular.` : ''}
+${registration.zahlungsart === 'Lastschrift' ? `* IBAN: ${registration.zahlungIban || 'Keine Angabe'}\n* Kontoinhaber: ${registration.zahlungKontoinhaber || 'Keine Angabe'}` : ''}${registration.zahlungsart === 'Kreditkarte' ? `* Zahlungsabwicklung: Kreditkartennummern bitte telefonisch übermitteln unter 02104 - 75711` : ''}
 Kenntnisnahme zur Vertragserfüllung (Art. 6 Abs. 1 lit. b DSGVO) bestätigt: Ja
 
 Vielen Dank für Ihr Vertrauen in über 30 Jahre Erfahrung!
@@ -108,7 +108,7 @@ Hier ist eine Übersicht Ihrer Reiseanmeldung:
 ${registration.zimmer && registration.zimmer.length > 0 ? registration.zimmer.map((z, idx) => `  * Zimmer ${idx+1}: ${z.zimmertyp} (${z.gaesteAnzahl} Person(en))`).join('\n') : `  * ${registration.zimmertyp}`}
 - Flexoption (59 Euro): ${registration.flexOption}
 - Gewählte Zahlungsart: ${registration.zahlungsart || 'Keine Angabe'}
-${registration.zahlungsart === 'Lastschrift' ? `  * IBAN: ${registration.zahlungIban || 'Keine Angabe'}\n  * Kontoinhaber: ${registration.zahlungKontoinhaber || 'Keine Angabe'}\n` : ''}${registration.zahlungsart === 'Kreditkarte' ? `  * Zahlungsabwicklung: Kreditkartendaten werden telefonisch an art reisen übermittelt (02104 75711, PCI-DSS konform). Keine Speicherung im Webformular.\n` : ''}- Gewünschte Zusatzleistungen:
+${registration.zahlungsart === 'Lastschrift' ? `  * IBAN: ${registration.zahlungIban || 'Keine Angabe'}\n  * Kontoinhaber: ${registration.zahlungKontoinhaber || 'Keine Angabe'}\n` : ''}${registration.zahlungsart === 'Kreditkarte' ? `  * Zahlungsabwicklung: Kreditkartennummern bitte telefonisch übermitteln unter 02104 - 75711\n` : ''}- Gewünschte Zusatzleistungen:
   ${registration.zusatzVerlaengerung ? `* Verlängerungswunsch: ${registration.zusatzVerlaengerungText}` : ''}
   ${registration.zusatzBeachten ? `* Wichtige Hinweise: ${registration.zusatzBeachtenText}` : ''}
   ${registration.zusatzSitzplatz ? `* Sitzplatz: ${registration.zusatzSitzplatzText}` : ''}
@@ -327,12 +327,12 @@ Inhabergeführt seit über 30 Jahren.
                     </div>
                   )}
                   {registration.zahlungsart === 'Kreditkarte' && (
-                    <div className="bg-amber-50/80 p-2 rounded border border-amber-200 text-[9px] text-amber-900 font-sans space-y-0.5 mt-1">
+                    <div className="bg-amber-50/80 p-2.5 rounded-lg border border-amber-200 text-[10px] text-amber-900 font-sans space-y-1 mt-1">
                       <div className="font-bold text-amber-950 flex items-center gap-1">
-                        💳 PCI-DSS konform
+                        📞 Kreditkartenzahlung
                       </div>
-                      <div className="leading-tight">
-                        Übergabe der Kartendaten telefonisch unter <strong>02104 75711</strong>.
+                      <div className="leading-snug">
+                        Kreditkartennummern bitte telefonisch übermitteln unter <strong>02104 - 75711</strong>.
                       </div>
                     </div>
                   )}

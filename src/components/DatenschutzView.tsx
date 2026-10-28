@@ -93,7 +93,7 @@ export default function DatenschutzView({ onBack }: DatenschutzViewProps) {
               Zum Schutz Ihrer finanziellen Daten und zur vollständigen Einhaltung der internationalen Sicherheitsstandards der Kreditkartenindustrie (<strong>PCI-DSS</strong>) werden über dieses Online-Formular <strong>niemals sensible Kreditkartendaten</strong> (wie Kartennummern, Gültigkeitsdaten oder Prüfziffern / CVV) erhoben, gespeichert oder per Webhook bzw. unverschlüsselter E-Mail übermittelt.
             </p>
             <p>
-              Wenn Sie als Zahlungsart „Kreditkarte“ wählen, erfolgt die Übergabe der Kartendaten sicher <strong>telefonisch</strong> direkt an das autorisierte Personal der art reisen GmbH (unter 02104 75711) oder auf Wunsch über einen gesicherten, PCI-DSS-zertifizierten Zahlungslink eines lizenzierten Zahlungsdienstleisters.
+              Wenn Sie als Zahlungsart „Kreditkarte“ wählen, erfolgt die Übermittlung der Kreditkartennummer telefonisch unter <strong>02104 - 75711</strong> direkt an das autorisierte Personal der Reisebüro art reisen GmbH.
             </p>
           </div>
         </section>

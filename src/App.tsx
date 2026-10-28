@@ -231,7 +231,7 @@ export default function App() {
       delete (cleanRegistration as any).zahlungKreditkarteGueltig;
       delete (cleanRegistration as any).zahlungKreditkarteInhaber;
       if (cleanRegistration.zahlungsart === 'Kreditkarte') {
-        (cleanRegistration as any).zahlungKreditkarteHinweis = 'Telefonische Übergabe an art reisen GmbH (02104 75711, PCI-DSS konform)';
+        (cleanRegistration as any).zahlungKreditkarteHinweis = 'Kreditkartennummern bitte telefonisch übermitteln unter 02104 - 75711';
       }
 
       fetch(viteMakeWebhookUrl, {

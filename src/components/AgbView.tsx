@@ -69,7 +69,7 @@ export default function AgbView({ onBack }: AgbViewProps) {
               4. Zahlungsmodalitäten & Zahlungsarten
             </h3>
             <p>
-              Zahlungen können per Überweisung, SEPA-Lastschrift oder Kreditkarte erfolgen. Kreditkartendaten werden aus Sicherheits- und PCI-DSS-Gründen nicht über Webformulare erhoben, sondern telefonisch übergeben oder über einen sicheren Zahlungslink abgewickelt. Bei Kontingentbuchungen mit Kreditkarte fällt ein Disagio von 2 % an.
+              Zahlungen können per Überweisung, SEPA-Lastschrift oder Kreditkarte erfolgen. Kreditkartendaten werden aus Sicherheitsgründen nicht über das Webformular erhoben; Kreditkartennummern bitte telefonisch übermitteln unter 02104 - 75711. Bei Kontingentbuchungen mit Kreditkarte fällt ein Disagio von 2 % an.
             </p>
           </div>
 

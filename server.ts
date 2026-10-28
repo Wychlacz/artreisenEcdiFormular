@@ -165,7 +165,7 @@ ZUSATZLEISTUNGEN & VERLÄNGERUNGEN:
 ZAHLUNGSINFORMATIONEN:
 -------------------------------------------------------------------------
 - Gewählte Zahlungsart:               ${zahlungsart || "Keine Angabe"}
-${zahlungsart === "Lastschrift" ? `- Kontoinhaber:                      ${zahlungKontoinhaber || '-'}\n- IBAN:                             ${zahlungIban || '-'}` : ""}${zahlungsart === "Kreditkarte" ? `- Zahlungsabwicklung:                Kreditkartendaten werden telefonisch an art reisen GmbH übermittelt (02104 75711, PCI-DSS konform – keine Kartendaten im Web/Webhook/E-Mail)` : ""}
+${zahlungsart === "Lastschrift" ? `- Kontoinhaber:                      ${zahlungKontoinhaber || '-'}\n- IBAN:                             ${zahlungIban || '-'}` : ""}${zahlungsart === "Kreditkarte" ? `- Zahlungsabwicklung:                Kreditkartennummern bitte telefonisch übermitteln unter 02104 - 75711` : ""}
 
 GESETZLICHE BESTÄTIGUNGEN:
 -------------------------------------------------------------------------

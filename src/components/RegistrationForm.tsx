@@ -1453,7 +1453,7 @@ export default function RegistrationForm({ onSubmit, onShowLegal, onShowAdmin }:
                   {[
                     { key: 'Lastschrift', label: 'Lastschrift', desc: 'Bequemer Bankeinzug' },
                     { key: 'Überweisung', label: 'Überweisung', desc: 'Zahlung per Banküberweisung' },
-                    { key: 'Kreditkarte', label: 'Kreditkarte', desc: 'Bei Kontingentbuchungen zzgl. 2% Disagio' }
+                    { key: 'Kreditkarte', label: 'Kreditkarte', desc: 'Kreditkartennummern bitte telefonisch übermitteln unter 02104 - 75711' }
                   ].map(opt => {
                     const isSelected = formData.zahlungsart === opt.key;
                     return (
@@ -1597,34 +1597,32 @@ export default function RegistrationForm({ onSubmit, onShowLegal, onShowAdmin }:
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: 'auto' }}
                       exit={{ opacity: 0, height: 0 }}
-                      className="mt-3 p-4 bg-amber-50/70 border border-amber-200/80 rounded-xl space-y-3 overflow-hidden text-amber-950"
+                      className="mt-3 p-4 bg-amber-50/80 border border-amber-300 rounded-xl space-y-3 overflow-hidden text-amber-950"
                     >
                       <div className="flex items-center gap-2">
                         <CreditCard className="w-4 h-4 text-amber-700 shrink-0" />
                         <h4 className="text-xs font-display font-black uppercase tracking-wide text-amber-900">
-                          Sicherheitshinweis zur Kreditkartenzahlung (PCI-DSS konform)
+                          Zahlungsart Kreditkarte
                         </h4>
                       </div>
 
-                      <div className="text-xs space-y-2 leading-relaxed font-sans text-amber-900">
-                        <p className="bg-white/80 p-3 rounded-lg border border-amber-200 text-[11px]">
-                          🔒 <strong>Keine Kreditkartendaten im Webformular:</strong> Gemäß den Sicherheitsstandards der Kreditkartenindustrie (<strong>PCI-DSS</strong>) werden über dieses Online-Formular keine Kreditkartennummern oder Prüfziffern erfasst und niemals per Webhook oder E-Mail übertragen.
-                        </p>
-
-                        <div className="bg-brand-blue/5 border border-brand-blue/20 p-3 rounded-lg text-xs text-brand-blue flex items-start gap-2.5">
-                          <span className="text-base shrink-0">📞</span>
-                          <div>
-                            <strong>Telefonische Übergabe:</strong> Bitte übergeben Sie uns Ihre Kreditkartendaten nach der Anmeldung einfach <strong>telefonisch unter 02104 75711</strong> (Mo–Fr) an unser Serviceteam der Reisebüro art reisen GmbH.
+                      <div className="bg-white p-4 rounded-xl border border-amber-200/90 shadow-xs space-y-2.5">
+                        <div className="flex items-start gap-3">
+                          <span className="text-2xl shrink-0">📞</span>
+                          <div className="space-y-1">
+                            <p className="text-sm font-display font-bold text-brand-dark-brown">
+                              Kreditkartennummern bitte telefonisch übermitteln unter 02104 - 75711
+                            </p>
+                            <p className="text-xs text-gray-600 font-sans leading-relaxed">
+                              Zu Ihrer Sicherheit und zum Schutz vor Datenmissbrauch werden im Webformular <strong>keine Kreditkartennummern</strong> abgefragt. Bitte übermitteln Sie uns Ihre Kreditkartendaten nach Absenden der Buchung einfach telefonisch unter <strong>02104 - 75711</strong> an das Team von Reisebüro art reisen GmbH.
+                            </p>
                           </div>
                         </div>
-
-                        <p className="text-[11px] text-gray-600 italic">
-                          Alternativ stellen wir Ihnen auf Wunsch nach Eingang der Buchung gerne einen gesicherten Zahlungslink über einen zertifizierten Zahlungsanbieter (z. B. Stripe) bereit.
-                        </p>
-                        <p className="text-[10px] text-amber-800">
-                          * Hinweis: Bei Kontingentbuchungen mit Kreditkarte fällt ein Disagio von 2 % an.
-                        </p>
                       </div>
+
+                      <p className="text-[10px] text-amber-800 font-sans">
+                        * Hinweis: Bei Kontingentbuchungen mit Kreditkarte fällt ein Disagio von 2 % an.
+                      </p>
                     </motion.div>
                   )}
                 </AnimatePresence>

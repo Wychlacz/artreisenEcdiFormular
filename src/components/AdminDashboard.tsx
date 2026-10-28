@@ -148,7 +148,7 @@ export default function AdminDashboard({
         reg.zahlungsart === 'Lastschrift' 
           ? `IBAN: ${reg.zahlungIban ? (reg.zahlungIban.substring(0, 4) + ' **** **** ' + reg.zahlungIban.slice(-4)) : ''} | Inhaber: ${reg.zahlungKontoinhaber || ''}`
           : reg.zahlungsart === 'Kreditkarte'
-            ? 'Telefonische Übergabe an art reisen GmbH (PCI-DSS konform)'
+            ? 'Kreditkartennummern bitte telefonisch übermitteln unter 02104 - 75711'
             : '',
         reg.zusatzVerlaengerung ? 'Ja' : 'Nein',
         reg.zusatzVerlaengerungText || '',
@@ -804,9 +804,9 @@ export default function AdminDashboard({
                         </div>
                       )}
                       {selectedReg.zahlungsart === 'Kreditkarte' && (
-                        <div className="text-[10px] text-amber-900 bg-amber-50 p-2 rounded-lg border border-amber-200 mt-1 font-sans space-y-0.5">
-                          <div className="font-bold flex items-center gap-1">💳 PCI-DSS konform:</div>
-                          <div className="text-gray-600">Übergabe telefonisch (02104 75711) oder per zertifiziertem Zahlungslink</div>
+                        <div className="text-[10px] text-amber-900 bg-amber-50 p-2.5 rounded-lg border border-amber-200 mt-1 font-sans space-y-1">
+                          <div className="font-bold flex items-center gap-1">📞 Kreditkartenzahlung:</div>
+                          <div className="text-gray-700">Kreditkartennummern bitte telefonisch übermitteln unter <strong>02104 - 75711</strong></div>
                         </div>
                       )}
                     </div>
